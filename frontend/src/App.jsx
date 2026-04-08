@@ -6,7 +6,7 @@ import HomePage from "./pages/HomePage";
 import AlumnoInicio from "./pages/AlumnoInicio";
 import MaestroPanel from "./pages/MaestroPanel";
 import Login from "./pages/Login";
-import Register from "./pages/Register"; // <-- importar Register
+import Register from "./pages/Register";
 import RutaProtegida from "./components/RutaProtegida";
 import Navbar from "./components/navbar";
 
@@ -14,10 +14,7 @@ function AppRoutes() {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
   const location = useLocation();
 
-  // Rutas donde NO queremos mostrar la Navbar
-  const hideNavbarOn = ["/login", "/register"]; // <-- ocultar también en register
-
-  // Búsqueda global (si quieres que Navbar controle la búsqueda)
+  const hideNavbarOn = ["/login", "/register"];
   const [q, setQ] = useState("");
 
   const logout = () => {
@@ -37,14 +34,11 @@ function AppRoutes() {
       >
         <Routes>
           <Route path="/" element={<HomePage q={q} />} />
+          <Route path="/explorar" element={<HomePage q={q} />} />
 
-          {/* Login público */}
           <Route path="/login" element={<Login />} />
-
-          {/* Register público */}
           <Route path="/register" element={<Register />} />
 
-          {/* Dashboard Alumno (protegido) */}
           <Route
             path="/dashboard/alumno"
             element={
@@ -54,7 +48,6 @@ function AppRoutes() {
             }
           />
 
-          {/* Dashboard Maestro (protegido) */}
           <Route
             path="/dashboard/maestro"
             element={
