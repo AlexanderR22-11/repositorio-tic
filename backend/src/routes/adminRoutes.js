@@ -1,0 +1,20 @@
+// src/routes/adminRoutes.js
+import express from "express";
+import multer from "multer";
+import { backupNow, restoreNow } from "../controllers/backupController.js";
+import { exportDocumentosCSV, exportDocumentosJSON } from "../controllers/exportController.js";
+import { generarReportePDF } from "../controllers/reportController.js";
+import { authenticate, authorize } from "../middleware/auth.js";
+
+const router = express.Router();
+const upload = multer({ dest: "uploads/" });
+
+router.post("/backup", authenticate, authorize("admin"), backupNow);
+router.post("/restore", authenticate, authorize("admin"), upload.single("file"), restoreNow);
+
+router.get("/export/csv", authenticate, authorize(["admin", "maestro"]), exportDocumentosCSV);
+router.get("/export/json", authenticate, authorize(["admin", "maestro"]), exportDocumentosJSON);
+
+router.get("/report/pdf", authenticate, authorize(["admin", "maestro", "alumno"]), generarReportePDF);
+
+export default router;
