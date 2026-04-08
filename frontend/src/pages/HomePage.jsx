@@ -33,14 +33,9 @@ export default function HomePage({ q = "" }) {
   );
 
   const recentMatches = useMemo(() => {
-    const ordered = [...sampleDocs].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const usedSubjects = new Set();
-
-    return ordered.filter((doc) => {
-      if (usedSubjects.has(doc.subjectId)) return false;
-      usedSubjects.add(doc.subjectId);
-      return true;
-    }).slice(0, 4);
+    return [...sampleDocs]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 4);
   }, []);
 
   const query = (q || "").toLowerCase();
@@ -80,9 +75,9 @@ export default function HomePage({ q = "" }) {
             <div className="card-body">
               <h3 className="card-title text-2xl flex items-center gap-2">
                 <FaFutbol />
-                Partidos recientes subidos
+                Archivos recientes subidos
               </h3>
-              <p className="text-white/90">Últimos 4, cada uno de una materia diferente.</p>
+              <p className="text-white/90">Últimos 4 archivos subidos al repositorio.</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 {recentMatches.map((doc) => (
