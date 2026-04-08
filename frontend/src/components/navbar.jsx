@@ -1,6 +1,6 @@
 // src/components/Navbar.jsx
 import { Link, useNavigate } from "react-router-dom";
-import DarkModeToggle from "./DarkModeToggle"; // opcional
+import DarkModeToggle from "./DarkModeToggle";
 import { FaSearch, FaUserCircle } from "react-icons/fa";
 
 export default function Navbar({ usuario, onLogout, q, setQ }) {
@@ -24,6 +24,12 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
             <div className="text-xs text-white/80">Material académico para Ingeniería</div>
           </div>
         </div>
+
+        <nav className="hidden lg:flex items-center gap-4 text-sm">
+          <a href="/#inicio" className="hover:underline">Inicio</a>
+          <a href="/#materiales" className="hover:underline">Materias</a>
+          <a href="/#materiales" className="hover:underline">Archivos</a>
+        </nav>
 
         <div className="flex-1 flex justify-center">
           <div className="bg-white px-3 py-1 rounded-full flex items-center gap-2 text-black shadow w-full max-w-xl">
