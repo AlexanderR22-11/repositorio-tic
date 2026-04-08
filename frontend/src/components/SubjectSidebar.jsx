@@ -5,8 +5,7 @@ export default function SubjectSidebar({ subjects, selectedSubjectId, onSelect }
   return (
     <aside className="md:col-span-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 h-fit">
       <div className="mb-3">
-        <h4 className="font-bold text-[#006847]">Aulas</h4>
-        <p className="text-xs text-gray-500">Estilo Classroom</p>
+        <h4 className="font-bold text-[#006847]">Clases</h4>
       </div>
 
       <ul className="space-y-2">

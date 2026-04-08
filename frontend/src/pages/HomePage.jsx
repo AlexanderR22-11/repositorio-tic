@@ -59,7 +59,7 @@ export default function HomePage({ q = "" }) {
 
   return (
     <main className="min-h-screen bg-[#F7F7F8]" id="inicio">
-      <header className="max-w-7xl mx-auto px-6 py-8">
+      <header className="max-w-7xl mx-auto px-6 pt-3 pb-2">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-extrabold text-[#006847]">Repositorio UTN</h1>
@@ -68,7 +68,7 @@ export default function HomePage({ q = "" }) {
         </div>
       </header>
 
-      <section className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6" id="materiales">
+      <section className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 mt-1" id="materiales">
         <SubjectSidebar
           subjects={subjects}
           selectedSubjectId={selectedSubjectId}
