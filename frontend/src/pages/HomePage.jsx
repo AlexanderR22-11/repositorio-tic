@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { FaCalendarAlt, FaClock, FaFileAlt } from "react-icons/fa";
+import { FaCalendarAlt, FaClock, FaFutbol } from "react-icons/fa";
 import DocumentCard from "../components/DocumentCard";
 import SubjectSidebar from "../components/SubjectSidebar";
 
@@ -79,8 +79,8 @@ export default function HomePage({ q = "" }) {
           <article className="card bg-gradient-to-r from-[#006847] to-[#0b8f63] text-white shadow-md mb-6">
             <div className="card-body">
               <h3 className="card-title text-2xl flex items-center gap-2">
-                <FaFileAlt />
-                Archivos recientemente subidos
+                <FaFutbol />
+                Partidos recientes subidos
               </h3>
               <p className="text-white/90">Últimos 4, cada uno de una materia diferente.</p>
 
