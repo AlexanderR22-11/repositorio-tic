@@ -126,7 +126,13 @@ export default function HomePage({ q = "" }) {
         </div>
       </motion.header>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mt-1" id="materiales">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-2 grid md:grid-cols-3 gap-3">
+        <article className="card bg-base-100 border border-base-200 shadow-sm"><div className="card-body p-4"><h3 className="card-title text-base">Problemática</h3><p className="text-sm text-base-content/70">El material didáctico estaba disperso y sin control por rol, dificultando consultas y seguimiento académico.</p></div></article>
+        <article className="card bg-base-100 border border-base-200 shadow-sm"><div className="card-body p-4"><h3 className="card-title text-base">Objetivo</h3><p className="text-sm text-base-content/70">Centralizar documentos por materia para alumnos, maestros y administradores con flujo seguro y trazable.</p></div></article>
+        <article className="card bg-base-100 border border-base-200 shadow-sm"><div className="card-body p-4"><h3 className="card-title text-base">¿Cómo funciona?</h3><p className="text-sm text-base-content/70">1) Inicia sesión por rol. 2) Accede a tu panel. 3) Consulta o gestiona materiales según permisos.</p></div></article>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mt-4" id="materiales">
         <SubjectSidebar
           subjects={subjectsWithCount}
           selectedSubjectId={selectedSubjectId}

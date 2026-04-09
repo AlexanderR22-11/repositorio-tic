@@ -1,6 +1,6 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import HomePage from "./pages/HomePage";
 import AlumnoInicio from "./pages/AlumnoInicio";
@@ -8,34 +8,34 @@ import MaestroPanel from "./pages/MaestroPanel";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
 import RutaProtegida from "./components/RutaProtegida";
 import Navbar from "./components/navbar";
 import Footer from "./components/Footer";
+import { clearStoredAuth, getStoredUser } from "./utils/auth";
 
 function AppRoutes() {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
   const location = useLocation();
+  const usuario = useMemo(() => getStoredUser(), [location.pathname]);
 
-  const hideNavbarOn = ["/login", "/register"];
+  const hideNavbarOn = ["/login", "/register", "/forgot-password"];
+  const shouldHideChrome = hideNavbarOn.includes(location.pathname) || location.pathname.startsWith("/dashboard");
   const [q, setQ] = useState("");
 
   const logout = () => {
-    localStorage.removeItem("usuario");
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("usuario");
-    sessionStorage.removeItem("token");
+    clearStoredAuth();
     window.location.href = "/login";
   };
 
   return (
     <>
-      {!hideNavbarOn.includes(location.pathname) && (
+      {!shouldHideChrome && (
         <Navbar usuario={usuario} onLogout={logout} q={q} setQ={setQ} />
       )}
 
       <div
         className={`min-h-screen ${
-          hideNavbarOn.includes(location.pathname) ? "" : "pt-[126px] md:pt-[72px]"
+          shouldHideChrome ? "" : "pt-[126px] md:pt-[72px]"
         }`}
       >
         <Routes>
@@ -45,6 +45,7 @@ function AppRoutes() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* Alumno: vista completa con materiales y acciones funcionales. */}
           <Route
@@ -69,7 +70,7 @@ function AppRoutes() {
           <Route
             path="/dashboard/maestro"
             element={
-              <RutaProtegida rolPermitido="maestro">
+              <RutaProtegida rolPermitido={["maestro", "admin", "superadmin"]}>
                 <MaestroPanel />
               </RutaProtegida>
             }
@@ -88,7 +89,7 @@ function AppRoutes() {
         </Routes>
       </div>
 
-      {!hideNavbarOn.includes(location.pathname) && <Footer />}
+      {!shouldHideChrome && <Footer />}
     </>
   );
 }

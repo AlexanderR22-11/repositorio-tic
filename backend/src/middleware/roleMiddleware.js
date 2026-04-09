@@ -1,19 +1,5 @@
-const checkRole = (rolesPermitidos) => {
+import { requireRole } from "./auth.js";
 
-    return (req, res, next) => {
-  
-      const userRole = req.user.rol;
-  
-      if (!rolesPermitidos.includes(userRole)) {
-        return res.status(403).json({
-          message: "No tienes permisos"
-        });
-      }
-  
-      next();
-  
-    };
-  
-  };
-  
-  export default checkRole;
+const checkRole = (rolesPermitidos) => requireRole(rolesPermitidos);
+
+export default checkRole;
