@@ -1,5 +1,6 @@
 // src/pages/AlumnoInicio.jsx
 import { useEffect, useMemo, useState, useRef } from "react";
+import { getImageForSubject } from "../utils/subjectImages";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import {
@@ -164,9 +165,18 @@ function SkeletonGrid({ count = 6 }) {
 
 /* ---------- MaterialCard enriquecida ---------- */
 function MaterialCard({ m, onToggleFav, isFav, onPreview }) {
+  const subjectImage = getImageForSubject(m.materia);
+
   return (
-    <motion.article whileHover={{ y: -6 }} className="bg-white rounded-lg shadow p-4 flex flex-col justify-between" layout>
-      <div>
+    <motion.article whileHover={{ y: -6 }} className="bg-white rounded-lg shadow overflow-hidden flex flex-col justify-between" layout>
+      <img
+        src={subjectImage}
+        alt={`Imagen representativa de ${m.materia || "la materia"}`}
+        className="w-full h-32 object-cover"
+        loading="lazy"
+      />
+
+      <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-md bg-[#f0fff6] text-[#006847] flex items-center justify-center">
@@ -189,7 +199,7 @@ function MaterialCard({ m, onToggleFav, isFav, onPreview }) {
         {m.descripcion && <p className="mt-3 text-sm text-gray-600 line-clamp-3">{m.descripcion}</p>}
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
+      <div className="px-4 pb-4 mt-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button onClick={() => onPreview(m)} className="btn btn-sm btn-ghost">Vista previa</button>
           <button onClick={() => toast("Descarga simulada")} className="btn btn-sm bg-[#006847] text-white hover:bg-[#005c3f]">
@@ -256,11 +266,11 @@ export default function AlumnoInicio() {
   useEffect(() => { debounced(q); }, [q, debounced]);
 
   const clasesBase = [
-    { name: "Desarrollo Web", teacher: "Ing. Laura Méndez", cover: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1400&q=80" },
-    { name: "Bases de Datos", teacher: "Mtro. Daniel Rojas", cover: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80" },
-    { name: "POO", teacher: "Ing. Ana Sofía Ruiz", cover: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1400&q=80" },
-    { name: "Redes", teacher: "Mtro. Carlos Herrera", cover: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80" },
-    { name: "Sistemas Operativos", teacher: "Ing. José Luis Vega", cover: "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1400&q=80" }
+    { name: "Desarrollo Web", teacher: "Ing. Laura Méndez", cover: getImageForSubject("Desarrollo Web") },
+    { name: "Bases de Datos", teacher: "Mtro. Daniel Rojas", cover: getImageForSubject("Bases de Datos") },
+    { name: "POO", teacher: "Ing. Ana Sofía Ruiz", cover: getImageForSubject("POO") },
+    { name: "Redes", teacher: "Mtro. Carlos Herrera", cover: getImageForSubject("Redes") },
+    { name: "Sistemas Operativos", teacher: "Ing. José Luis Vega", cover: getImageForSubject("Sistemas Operativos") }
   ];
   const clases = clasesBase.map((clase) => ({
     ...clase,

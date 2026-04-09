@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { HiPlus, HiTrash, HiSearch, HiDocumentText } from "react-icons/hi";
 import { canTeacherManageSubject, getStoredUser, normalizeRole } from "../utils/auth";
+import { getImageForSubject } from "../utils/subjectImages";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = {
@@ -218,8 +219,15 @@ export default function MaestroPanel() {
               {materialesFiltrados.length === 0 && <div className="p-6 bg-white rounded shadow text-gray-500">No hay materiales</div>}
 
               {materialesFiltrados.map((m) => (
-                <motion.article key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded shadow flex flex-col justify-between">
-                  <div>
+                <motion.article key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded shadow overflow-hidden flex flex-col justify-between">
+                  <img
+                    src={getImageForSubject(m.materia)}
+                    alt={`Imagen representativa de ${m.materia || "la materia"}`}
+                    className="w-full h-28 object-cover"
+                    loading="lazy"
+                  />
+
+                  <div className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="p-2 rounded bg-[#f0fff6] text-[#006847]"><HiDocumentText size={20} /></div>
                       <div>
@@ -229,7 +237,7 @@ export default function MaestroPanel() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-end gap-2">
+                  <div className="px-4 pb-4 mt-1 flex items-center justify-end gap-2">
                     <button onClick={() => eliminarMaterial(m)} className="btn btn-sm btn-error text-white flex items-center gap-2"><HiTrash /> Eliminar</button>
                   </div>
                 </motion.article>
