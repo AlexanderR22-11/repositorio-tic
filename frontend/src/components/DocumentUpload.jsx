@@ -1,6 +1,4 @@
-// src/components/DocumentUpload.jsx
-import React, { useState, useRef } from "react";
-import "./document-upload.css"; // opcional
+import React, { useRef, useState } from "react";
 
 export default function DocumentUpload({ apiBase = "http://localhost:3000/api", onUploaded = () => {} }) {
   const [title, setTitle] = useState("");
@@ -13,7 +11,7 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
   const [error, setError] = useState(null);
   const fileInputRef = useRef();
 
-  const token = localStorage.getItem("token"); // ajusta según dónde guardes el token
+  const token = localStorage.getItem("token");
 
   const resetForm = () => {
     setTitle("");
@@ -22,7 +20,7 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
     setPublishedAt("");
     setFile(null);
     setProgress(0);
-    fileInputRef.current && (fileInputRef.current.value = "");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const validate = () => {
@@ -30,12 +28,13 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
       setError("Selecciona un archivo para subir.");
       return false;
     }
-    // ejemplo: limitar tamaño a 50MB
+
     const maxBytes = 50 * 1024 * 1024;
     if (file.size > maxBytes) {
       setError("El archivo excede el tamaño máximo de 50 MB.");
       return false;
     }
+
     return true;
   };
 
@@ -55,7 +54,6 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
     if (publishedAt) formData.append("fecha_publicacion", publishedAt);
 
     try {
-      // Usamos XMLHttpRequest para poder reportar progreso
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${apiBase}/documents`, true);
@@ -71,16 +69,17 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
         xhr.onload = () => {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText || "{}"));
-          } else {
-            let msg = `Error ${xhr.status}`;
-            try {
-              const body = JSON.parse(xhr.responseText);
-              msg = body.message || JSON.stringify(body);
-            } catch (e) {
-              msg = xhr.responseText || msg;
-            }
-            reject(new Error(msg));
+            return;
           }
+
+          let msg = `Error ${xhr.status}`;
+          try {
+            const body = JSON.parse(xhr.responseText);
+            msg = body.message || JSON.stringify(body);
+          } catch {
+            msg = xhr.responseText || msg;
+          }
+          reject(new Error(msg));
         };
 
         xhr.onerror = () => reject(new Error("Error de red al subir el archivo."));
@@ -88,74 +87,99 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
       });
 
       resetForm();
-      setUploading(false);
       setProgress(100);
-      onUploaded(); // notificar al padre para refrescar lista
+      onUploaded();
     } catch (err) {
       setError(err.message || "Error al subir documento.");
-      setUploading(false);
       setProgress(0);
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <form className="doc-upload" onSubmit={handleSubmit}>
-      <h3>Subir documento</h3>
+    <form className="card bg-base-100 shadow-md border border-base-200" onSubmit={handleSubmit}>
+      <div className="card-body gap-4">
+        <h3 className="card-title">Subir documento</h3>
 
-      <label className="field">
-        <span className="label">Archivo</span>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          disabled={uploading}
-        />
-      </label>
+        <label className="form-control w-full">
+          <span className="label-text mb-1">Archivo</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.ppt,.pptx,.txt"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="file-input file-input-bordered w-full"
+            disabled={uploading}
+          />
+        </label>
 
-      <label className="field">
-        <span className="label">Título</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} disabled={uploading} />
-      </label>
+        <label className="form-control w-full">
+          <span className="label-text mb-1">Título</span>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="input input-bordered"
+            disabled={uploading}
+          />
+        </label>
 
-      <label className="field">
-        <span className="label">Autor</span>
-        <input value={author} onChange={(e) => setAuthor(e.target.value)} disabled={uploading} />
-      </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="form-control w-full">
+            <span className="label-text mb-1">Autor</span>
+            <input
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+              className="input input-bordered"
+              disabled={uploading}
+            />
+          </label>
 
-      <label className="field">
-        <span className="label">Fecha publicación</span>
-        <input type="date" value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)} disabled={uploading} />
-      </label>
-
-      <label className="field">
-        <span className="label">Descripción</span>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} disabled={uploading} />
-      </label>
-
-      {error && <div className="error">{error}</div>}
-
-      <div className="actions">
-        <button type="submit" disabled={uploading}>
-          {uploading ? `Subiendo ${progress}%` : "Subir"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            resetForm();
-            setError(null);
-          }}
-          disabled={uploading}
-        >
-          Limpiar
-        </button>
-      </div>
-
-      {uploading && (
-        <div className="progress">
-          <div className="bar" style={{ width: `${progress}%` }} />
+          <label className="form-control w-full">
+            <span className="label-text mb-1">Fecha publicación</span>
+            <input
+              type="date"
+              value={publishedAt}
+              onChange={(e) => setPublishedAt(e.target.value)}
+              className="input input-bordered"
+              disabled={uploading}
+            />
+          </label>
         </div>
-      )}
+
+        <label className="form-control w-full">
+          <span className="label-text mb-1">Descripción</span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="textarea textarea-bordered min-h-24"
+            disabled={uploading}
+          />
+        </label>
+
+        {error ? <div className="alert alert-error py-2 text-sm">{error}</div> : null}
+
+        {uploading ? (
+          <progress className="progress progress-primary w-full" value={progress} max="100" />
+        ) : null}
+
+        <div className="card-actions justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setError(null);
+            }}
+            className="btn btn-ghost"
+            disabled={uploading}
+          >
+            Limpiar
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={uploading}>
+            {uploading ? `Subiendo ${progress}%` : "Subir"}
+          </button>
+        </div>
+      </div>
     </form>
   );
 }
