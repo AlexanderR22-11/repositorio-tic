@@ -12,3 +12,13 @@ Sistema web académico para la **Universidad Tecnológica de Nayarit**, orientad
 - **Capítulo 6 (Usabilidad):** navegación clara, filtros y organización de información por secciones.
 - **Capítulo 7 (Responsive):** distribución en `grid` adaptable para móvil y escritorio.
 - **Capítulo 8 (Exposición):** guía resumida integrada para explicar problemática, módulos, navegación y planeación de seguridad/autenticación por rol.
+
+## Instalación rápida de dependencias
+
+Desde la raíz del proyecto, ejecuta:
+
+```bash
+./install-deps.sh
+```
+
+Este script limpia `node_modules` y reinstala dependencias en `backend` y `frontend` con `npm ci`.
