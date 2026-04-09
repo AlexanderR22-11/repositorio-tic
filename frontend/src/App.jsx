@@ -20,6 +20,9 @@ function AppRoutes() {
 
   const logout = () => {
     localStorage.removeItem("usuario");
+    localStorage.removeItem("token");
+    sessionStorage.removeItem("usuario");
+    sessionStorage.removeItem("token");
     window.location.href = "/login";
   };
 
@@ -34,14 +37,26 @@ function AppRoutes() {
         style={{ paddingTop: hideNavbarOn.includes(location.pathname) ? 0 : 72 }}
       >
         <Routes>
+          {/* La homepage actual se conserva como experiencia base de consulta. */}
           <Route path="/" element={<HomePage q={q} />} />
           <Route path="/explorar" element={<HomePage q={q} />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
+          {/* Alumno: reutiliza la vista actual de consulta (HomePage). */}
           <Route
             path="/dashboard/alumno"
+            element={
+              <RutaProtegida rolPermitido="alumno">
+                <HomePage q={q} />
+              </RutaProtegida>
+            }
+          />
+
+          {/* Ruta legacy: se conserva por compatibilidad, sin romper flujo existente. */}
+          <Route
+            path="/alumno/inicio"
             element={
               <RutaProtegida rolPermitido="alumno">
                 <AlumnoInicio />
@@ -61,7 +76,7 @@ function AppRoutes() {
           <Route
             path="/dashboard/admin"
             element={
-              <RutaProtegida rolPermitido="admin">
+              <RutaProtegida rolPermitido={["admin", "superadmin"]}>
                 <DashboardAdmin />
               </RutaProtegida>
             }

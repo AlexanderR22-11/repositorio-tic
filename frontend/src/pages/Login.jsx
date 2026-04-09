@@ -1,10 +1,11 @@
-// src/pages/Login.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { HiEye, HiEyeOff, HiAcademicCap } from "react-icons/hi";
+import { findMockUser } from "../config/mockUsers";
+import { getDefaultRouteForRole, normalizeRole } from "../utils/auth";
 
 export default function Login() {
   const [correo, setCorreo] = useState("");
@@ -27,31 +28,46 @@ export default function Login() {
     err: (m) => toast.error(m),
   };
 
-  // Helper: guarda token/usuario en storage. Para compatibilidad con tu guard,
-  // siempre escribimos en localStorage (para que RutaProtegida lo encuentre).
-  // Además escribimos en sessionStorage si remember === false, and keep localStorage
-  // so guards that read localStorage work reliably.
   const saveAuth = (user, token) => {
-    // Siempre mantener en localStorage para evitar problemas de lectura por guards
     localStorage.setItem("usuario", JSON.stringify(user));
-    localStorage.setItem("token", token);
+    localStorage.setItem("token", token || "mock-token");
 
-    // Si el usuario no quiere "remember", también mantener en sessionStorage
-    // (no borraremos localStorage para compatibilidad con tu guard)
-    sessionStorage.setItem("usuario", JSON.stringify(user));
-    sessionStorage.setItem("token", token);
+    if (!remember) {
+      sessionStorage.setItem("usuario", JSON.stringify(user));
+      sessionStorage.setItem("token", token || "mock-token");
+    }
   };
 
-  // Login real: POST /api/auth/login
+  const redirectByRole = (user) => {
+    const role = normalizeRole(user);
+    navigate(getDefaultRouteForRole(role));
+  };
+
+  const mockLoginFallback = () => {
+    const mockUser = findMockUser(correo, password);
+    if (!mockUser) {
+      notify.err("Credenciales inválidas");
+      return false;
+    }
+
+    const safeUser = {
+      nombre: mockUser.nombre,
+      correo: mockUser.correo,
+      role: mockUser.role,
+      materias: mockUser.materias,
+    };
+
+    saveAuth(safeUser, "mock-token");
+    notify.ok(`Bienvenido ${safeUser.nombre}`);
+    redirectByRole(safeUser);
+    return true;
+  };
+
   const login = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
 
     if (!correo.trim() || !password) {
       notify.err("Completa todos los campos");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
-      notify.err("Ingresa un correo válido");
       return;
     }
 
@@ -65,47 +81,26 @@ export default function Login() {
 
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        if (res.status === 401) notify.err(data.error || "Credenciales inválidas");
-        else if (res.status === 403) notify.err(data.error || "Acceso denegado");
-        else notify.err(data.error || "Error en autenticación");
+      if (!res.ok || !data.user || !data.token) {
+        // Si el backend falla o no devuelve role utilizable, usar fallback local.
+        const ok = mockLoginFallback();
+        if (!ok) notify.err(data.error || "Error en autenticación");
         return;
       }
 
-      if (!data.user || !data.token) {
-        notify.err("Respuesta inválida del servidor");
-        console.error("Login: respuesta incompleta", data);
-        return;
-      }
-
-      // Guardar credenciales en storage
       saveAuth(data.user, data.token);
-
       notify.ok(`Bienvenido ${data.user.nombre || data.user.correo}`);
-
-      // --- Normalizar role y redirigir a rutas de la app (NO rutas de archivos) ---
-      console.log("Login: role recibido (raw):", data.user.role);
-      const role = (data.user.role || "").toString().toLowerCase();
-
-      if (role === "alumno") {
-        console.log("Login: navegando a /dashboard/alumno");
-        navigate("/dashboard/alumno");
-      } else if (role === "maestro") {
-        console.log("Login: navegando a /dashboard/maestro");
-        navigate("/dashboard/maestro");
-      } else {
-        console.log("Login: role desconocido, navegando a /");
-        navigate("/");
-      }
+      redirectByRole(data.user);
     } catch (error) {
-      console.error("Login error:", error);
-      notify.err("Error en autenticación");
+      // Entorno sin backend: fallback con usuarios mock.
+      if (!mockLoginFallback()) {
+        notify.err("No fue posible iniciar sesión");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Google login: decodifica y envía credential al backend
   const handleGoogleLogin = async (credentialResponse) => {
     try {
       if (!credentialResponse?.credential) {
@@ -113,73 +108,29 @@ export default function Login() {
         return;
       }
 
-      const decodeJwt = (token) => {
-        try {
-          const base64Url = token.split(".")[1];
-          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split("")
-              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-              .join("")
-          );
-          return JSON.parse(jsonPayload);
-        } catch {
-          return null;
-        }
-      };
-
-      const decoded = decodeJwt(credentialResponse.credential);
-      if (!decoded) {
-        notify.err("No se pudo decodificar el token de Google");
-        return;
-      }
-
-      const email = (decoded?.email || "").toLowerCase();
-      if (!email || !email.endsWith("@utnay.edu.mx")) {
-        notify.err("Solo correos institucionales @utnay.edu.mx");
-        return;
-      }
-
-      // Enviar credential al backend para validar/crear usuario y recibir token propio
       setLoading(true);
-      try {
-        const res = await fetch("http://localhost:3000/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ credential: credentialResponse.credential }),
-        });
+      const res = await fetch("http://localhost:3000/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
 
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          notify.err(data.error || "Error autenticando con Google en el servidor");
-          console.error("Google backend error:", data);
-          return;
-        }
-
-        if (!data.user || !data.token) {
-          notify.err("Respuesta inválida del servidor tras Google login");
-          console.error("Google login respuesta incompleta:", data);
-          return;
-        }
-
-        saveAuth(data.user, data.token);
-        notify.ok("Login con Google exitoso");
-
-        const role = (data.user.role || "").toString().toLowerCase();
-        if (role === "maestro") navigate("/dashboard/maestro");
-        else navigate("/pages/MaestroPanel");
-      } finally {
-        setLoading(false);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.user || !data.token) {
+        notify.err(data.error || "Error autenticando con Google");
+        return;
       }
+
+      saveAuth(data.user, data.token);
+      notify.ok("Login con Google exitoso");
+      redirectByRole(data.user);
     } catch (error) {
-      console.error("Error en handleGoogleLogin:", error);
       notify.err("Error en autenticación con Google");
+    } finally {
       setLoading(false);
     }
   };
 
-  // lee el client id de Vite
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
   return (
@@ -198,7 +149,6 @@ export default function Login() {
         className="w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 overflow-hidden"
       >
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Lado izquierdo visual mejorado */}
           <div className="hidden md:flex relative items-center justify-center p-8 overflow-hidden">
             <motion.img
               src="/repo.png"
@@ -239,7 +189,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Lado derecho formulario */}
           <div className="p-8">
             <header className="mb-6 text-center">
               <h1 className="text-2xl font-extrabold text-[#006847]">Iniciar sesión</h1>
@@ -301,14 +250,6 @@ export default function Login() {
                   />
                   <span className="text-gray-600">Recuérdame</span>
                 </label>
-
-                <button
-                  type="button"
-                  className="text-[#006847] hover:underline"
-                  onClick={() => notify.err("Función de recuperación no implementada")}
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
               </div>
 
               <button
@@ -317,14 +258,7 @@ export default function Login() {
                 className="w-full inline-flex items-center justify-center gap-3 bg-[#006847] hover:bg-[#005c3f] text-white py-2 rounded-lg shadow-md disabled:opacity-60 transition"
                 aria-busy={loading}
               >
-                {loading ? (
-                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" aria-hidden>
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                  </svg>
-                ) : (
-                  "Iniciar sesión"
-                )}
+                {loading ? "Ingresando..." : "Iniciar sesión"}
               </button>
             </form>
 
@@ -348,7 +282,8 @@ export default function Login() {
                 )}
               </div>
 
-              <div className="flex gap-3 justify-center mt-2">
+              {/* Botones de carga rápida para pruebas por rol */}
+              <div className="flex gap-3 justify-center mt-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
@@ -358,7 +293,7 @@ export default function Login() {
                   }}
                   className="text-xs text-gray-500 hover:underline"
                 >
-                  Cargar credenciales alumno
+                  Cargar alumno
                 </button>
 
                 <button
@@ -370,7 +305,19 @@ export default function Login() {
                   }}
                   className="text-xs text-gray-500 hover:underline"
                 >
-                  Cargar credenciales maestro
+                  Cargar maestro
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCorreo("admin@utn.com");
+                    setPassword("123");
+                    notify.ok("Credenciales de prueba (admin) cargadas");
+                  }}
+                  className="text-xs text-gray-500 hover:underline"
+                >
+                  Cargar admin
                 </button>
               </div>
             </div>
@@ -378,6 +325,7 @@ export default function Login() {
             <footer className="mt-6 text-xs text-gray-500 text-center">
               <p>Alumno: <span className="font-medium">alumno@utn.com</span> / <span className="font-medium">123</span></p>
               <p>Maestro: <span className="font-medium">maestro@utn.com</span> / <span className="font-medium">123</span></p>
+              <p>Admin: <span className="font-medium">admin@utn.com</span> / <span className="font-medium">123</span></p>
             </footer>
           </div>
         </div>

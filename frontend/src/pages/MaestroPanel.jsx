@@ -1,11 +1,11 @@
-// src/pages/MaestroPanel.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { HiPlus, HiTrash, HiSearch, HiDocumentText } from "react-icons/hi";
+import { canTeacherManageSubject, getStoredUser, normalizeRole } from "../utils/auth";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = {
   "application/pdf": [".pdf"],
   "application/msword": [".doc"],
@@ -15,30 +15,47 @@ const ACCEPTED_TYPES = {
 };
 
 export default function MaestroPanel() {
+  const usuario = getStoredUser();
+  const role = normalizeRole(usuario);
+  const materiasPermitidas = useMemo(() => (Array.isArray(usuario?.materias) ? usuario.materias : []), [usuario]);
+
   const [titulo, setTitulo] = useState("");
   const [tipo, setTipo] = useState("");
-  const [materia, setMateria] = useState("");
+  const [materia, setMateria] = useState(materiasPermitidas[0] || "");
   const [materiales, setMateriales] = useState([]);
   const [query, setQuery] = useState("");
   const [filterMateria, setFilterMateria] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE = 6;
 
   useEffect(() => {
-    const guardados = JSON.parse(localStorage.getItem("materiales")) || [];
-    setMateriales(guardados);
-  }, []);
+    const guardados = JSON.parse(localStorage.getItem("materiales") || "[]");
+    const visibles = guardados.filter((m) => {
+      if (role === "admin") return true;
+      return canTeacherManageSubject(usuario, m.materia);
+    });
+    setMateriales(visibles);
+  }, [role, usuario]);
 
-  // Helper: get token from storage (adjust key if you store it differently)
-  const getToken = () => {
-    return localStorage.getItem("token") || localStorage.getItem("authToken") || "";
+  const persistMateriales = (updater) => {
+    const all = JSON.parse(localStorage.getItem("materiales") || "[]");
+    const updatedLocal = updater(all);
+    localStorage.setItem("materiales", JSON.stringify(updatedLocal));
+
+    const visibles = updatedLocal.filter((m) => {
+      if (role === "admin") return true;
+      return canTeacherManageSubject(usuario, m.materia);
+    });
+    setMateriales(visibles);
   };
 
-  // Dropzone para archivos (envía al backend)
   const onDrop = async (acceptedFiles) => {
-    if (!acceptedFiles || acceptedFiles.length === 0) return;
+    if (!acceptedFiles?.length) return;
     const file = acceptedFiles[0];
+
+    if (!materia || !canTeacherManageSubject(usuario, materia)) {
+      toast.error("Solo puedes subir material de tus materias asignadas");
+      return;
+    }
 
     if (file.size > MAX_FILE_SIZE) {
       toast.error("Archivo demasiado grande. Máx 10 MB.");
@@ -47,59 +64,22 @@ export default function MaestroPanel() {
 
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file); // backend espera 'file'
-      form.append("titulo", titulo || file.name);
-      form.append("autor", "Fabian"); // ajustar según tu auth/usuario real
-      form.append("created_by", "1"); // ajustar al id real del usuario si lo tienes
-
-      const token = getToken();
-
-      const res = await fetch("http://localhost:3000/api/documents", {
-        method: "POST",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          // NO establecer Content-Type; el navegador lo hará con boundary
-        },
-        body: form,
-      });
-
-      const text = await res.text();
-      if (!res.ok) {
-        let err;
-        try {
-          err = JSON.parse(text);
-        } catch (e) {
-          err = text || res.statusText;
-        }
-        throw new Error(typeof err === "string" ? err : JSON.stringify(err));
-      }
-
-      const data = JSON.parse(text);
-      // data esperado: { id, titulo, archivo_url, created_by, ... }
+      // En flujo MVP se guarda localmente con metadatos del autor.
       const nuevo = {
-        titulo: data.titulo || titulo || file.name,
-        tipo: tipo || file.type || "Archivo",
-        materia: materia || "General",
+        id: crypto.randomUUID(),
+        titulo: titulo.trim() || file.name,
+        tipo: tipo.trim() || file.type || "Archivo",
+        materia,
         nombreArchivo: file.name,
         size: file.size,
         fecha: new Date().toISOString(),
-        archivo_url: data.archivo_url,
-        id: data.id,
-        created_by: data.created_by,
+        ownerEmail: usuario?.correo,
       };
 
-      const nuevosMateriales = [nuevo, ...materiales];
-      setMateriales(nuevosMateriales);
-      localStorage.setItem("materiales", JSON.stringify(nuevosMateriales));
-
+      persistMateriales((all) => [nuevo, ...all]);
       setTitulo("");
       setTipo("");
-      setMateria("");
       toast.success("Material subido correctamente");
-    } catch (err) {
-      console.error("[UPLOAD ERROR]", err);
-      toast.error("Error al subir archivo: " + (err.message || ""));
     } finally {
       setUploading(false);
     }
@@ -118,93 +98,41 @@ export default function MaestroPanel() {
       return;
     }
 
+    if (!canTeacherManageSubject(usuario, materia)) {
+      toast.error("No tienes permiso para gestionar esa materia");
+      return;
+    }
+
     const nuevo = {
+      id: crypto.randomUUID(),
       titulo: titulo.trim(),
       tipo: tipo.trim(),
       materia: materia.trim(),
       nombreArchivo: null,
       size: 0,
       fecha: new Date().toISOString(),
+      ownerEmail: usuario?.correo,
     };
 
-    const nuevosMateriales = [nuevo, ...materiales];
-    setMateriales(nuevosMateriales);
-    localStorage.setItem("materiales", JSON.stringify(nuevosMateriales));
-
+    persistMateriales((all) => [nuevo, ...all]);
     setTitulo("");
     setTipo("");
-    setMateria("");
     toast.success("Material guardado");
   };
 
-  // Eliminar local + opcionalmente backend si existe id
-  const eliminarMaterial = async (index) => {
-    if (!confirm("¿Eliminar este material? Esta acción no se puede deshacer.")) return;
-    const globalIndex = (page - 1) * PAGE_SIZE + index;
-    const item = materiales[globalIndex];
+  const eliminarMaterial = (item) => {
+    if (!confirm("¿Eliminar este material?")) return;
 
-    // Si el item tiene id (guardado en backend), intenta eliminar en backend
-    if (item && item.id) {
-      try {
-        const token = getToken();
-        const res = await fetch(`http://localhost:3000/api/documents/${item.id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          console.warn("No se pudo eliminar en backend:", res.status, text);
-          // continuar con eliminación local de todos modos si quieres
-        } else {
-          toast.success("Eliminado del servidor");
-        }
-      } catch (err) {
-        console.error("Error al eliminar en backend:", err);
-      }
+    const puedeEliminar = role === "admin" || canTeacherManageSubject(usuario, item.materia);
+    if (!puedeEliminar) {
+      toast.error("No tienes permiso para eliminar este material");
+      return;
     }
 
-    const nuevos = materiales.filter((_, i) => i !== globalIndex);
-    setMateriales(nuevos);
-    localStorage.setItem("materiales", JSON.stringify(nuevos));
+    persistMateriales((all) => all.filter((m) => m.id !== item.id));
     toast.success("Material eliminado");
   };
 
-  // Descargar archivo (si archivo_url está presente)
-  const descargar = async (m) => {
-    if (!m || !m.archivo_url) {
-      toast("No hay archivo para descargar");
-      return;
-    }
-    try {
-      const url = `http://localhost:3000${m.archivo_url}`;
-      // Usar fetch para obtener el blob y forzar descarga
-      const res = await fetch(url, {
-        headers: {
-          Authorization: getToken() ? `Bearer ${getToken()}` : "",
-        },
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || res.statusText);
-      }
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = m.nombreArchivo || "download";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error("Error al descargar:", err);
-      toast.error("Error al descargar archivo");
-    }
-  };
-
-  // Filtrado y paginación
   const materialesFiltrados = useMemo(() => {
     return materiales.filter((m) => {
       const matchesQuery =
@@ -216,14 +144,6 @@ export default function MaestroPanel() {
     });
   }, [materiales, query, filterMateria]);
 
-  const totalPages = Math.max(1, Math.ceil(materialesFiltrados.length / PAGE_SIZE));
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages]);
-
-  const pageItems = materialesFiltrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // Lista de materias para filtro
   const materiasUnicas = Array.from(new Set(materiales.map((m) => m.materia).filter(Boolean)));
 
   return (
@@ -233,27 +153,35 @@ export default function MaestroPanel() {
       <div className="max-w-6xl mx-auto">
         <motion.header initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <h1 className="text-3xl font-extrabold text-[#006847]">Panel Maestro</h1>
-          <p className="text-sm text-gray-600">Administra y sube materiales al repositorio institucional</p>
+          <p className="text-sm text-gray-600">
+            Gestiona únicamente materiales de tus materias asignadas.
+          </p>
         </motion.header>
 
+        <div className="mb-4 p-3 rounded-lg bg-white border text-sm text-gray-700">
+          Materias permitidas: <strong>{materiasPermitidas.join(", ") || "Sin materias asignadas"}</strong>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Formulario y Dropzone */}
           <motion.section initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} className="card bg-white p-6 shadow">
             <h2 className="text-lg font-semibold mb-3">Subir nuevo material</h2>
 
             <label className="block mb-2">
               <span className="text-sm text-gray-700">Título</span>
-              <input value={titulo} onChange={(e) => setTitulo(e.target.value)} className="input input-bordered w-full mt-1" placeholder="Ej. Guía de prácticas" />
+              <input value={titulo} onChange={(e) => setTitulo(e.target.value)} className="input input-bordered w-full mt-1" />
             </label>
 
             <label className="block mb-2">
               <span className="text-sm text-gray-700">Tipo</span>
-              <input value={tipo} onChange={(e) => setTipo(e.target.value)} className="input input-bordered w-full mt-1" placeholder="PDF, DOCX, ZIP..." />
+              <input value={tipo} onChange={(e) => setTipo(e.target.value)} className="input input-bordered w-full mt-1" placeholder="PDF, DOCX..." />
             </label>
 
             <label className="block mb-4">
               <span className="text-sm text-gray-700">Materia</span>
-              <input value={materia} onChange={(e) => setMateria(e.target.value)} className="input input-bordered w-full mt-1" placeholder="Desarrollo Web" />
+              <select value={materia} onChange={(e) => setMateria(e.target.value)} className="select select-bordered w-full mt-1">
+                {materiasPermitidas.length === 0 ? <option value="">Sin materias</option> : null}
+                {materiasPermitidas.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
             </label>
 
             <div {...getRootProps()} className={`border-dashed border-2 rounded p-4 text-center cursor-pointer transition ${isDragActive ? "border-[#006847] bg-[#f0fff6]" : "border-gray-200 bg-white"}`}>
@@ -261,18 +189,16 @@ export default function MaestroPanel() {
               <p className="text-sm text-gray-600 flex items-center justify-center gap-2">
                 <HiPlus /> Arrastra o haz click para seleccionar un archivo
               </p>
-              <p className="text-xs text-gray-400 mt-1">Tipos: PDF, DOCX, imágenes. Máx 10 MB.</p>
             </div>
 
             <div className="mt-4 flex gap-2">
-              <button onClick={guardarMaterial} className="btn bg-[#006847] text-white flex-1" disabled={uploading}>
-                {uploading ? "Subiendo..." : "Guardar sin archivo"}
+              <button onClick={guardarMaterial} className="btn bg-[#006847] text-white flex-1" disabled={uploading || !materiasPermitidas.length}>
+                {uploading ? "Subiendo..." : "Guardar"}
               </button>
-              <button onClick={() => { setTitulo(""); setTipo(""); setMateria(""); }} className="btn btn-ghost flex-1">Limpiar</button>
+              <button onClick={() => { setTitulo(""); setTipo(""); }} className="btn btn-ghost flex-1">Limpiar</button>
             </div>
           </motion.section>
 
-          {/* Panel de búsqueda y filtros */}
           <motion.aside initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-2">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
               <div className="flex items-center gap-2 w-full md:w-1/2">
@@ -285,17 +211,14 @@ export default function MaestroPanel() {
                   <option value="">Todas las materias</option>
                   {materiasUnicas.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
-
-                <div className="text-sm text-gray-500">Resultados: <span className="font-medium">{materialesFiltrados.length}</span></div>
               </div>
             </div>
 
-            {/* Lista de materiales */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {pageItems.length === 0 && <div className="p-6 bg-white rounded shadow text-gray-500">No hay materiales</div>}
+              {materialesFiltrados.length === 0 && <div className="p-6 bg-white rounded shadow text-gray-500">No hay materiales</div>}
 
-              {pageItems.map((m, i) => (
-                <motion.article key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded shadow flex flex-col justify-between">
+              {materialesFiltrados.map((m) => (
+                <motion.article key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-4 rounded shadow flex flex-col justify-between">
                   <div>
                     <div className="flex items-start gap-3">
                       <div className="p-2 rounded bg-[#f0fff6] text-[#006847]"><HiDocumentText size={20} /></div>
@@ -304,26 +227,13 @@ export default function MaestroPanel() {
                         <p className="text-xs text-gray-500">{m.tipo} • {m.materia}</p>
                       </div>
                     </div>
-
-                    <p className="text-xs text-gray-400 mt-3">Subido: {new Date(m.fecha).toLocaleString()}</p>
-                    {m.nombreArchivo && <p className="text-xs text-gray-400">Archivo: {m.nombreArchivo} • {(m.size/1024).toFixed(1)} KB</p>}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <button onClick={() => descargar(m)} className="btn btn-sm btn-outline">Descargar</button>
-                    <button onClick={() => eliminarMaterial(i)} className="btn btn-sm btn-error text-white flex items-center gap-2"><HiTrash /> Eliminar</button>
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    <button onClick={() => eliminarMaterial(m)} className="btn btn-sm btn-error text-white flex items-center gap-2"><HiTrash /> Eliminar</button>
                   </div>
                 </motion.article>
               ))}
-            </div>
-
-            {/* Paginación simple */}
-            <div className="mt-4 flex items-center justify-between">
-              <div className="text-sm text-gray-600">Página {page} de {totalPages}</div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setPage((p) => Math.max(1, p-1))} className="btn btn-sm" disabled={page === 1}>Anterior</button>
-                <button onClick={() => setPage((p) => Math.min(totalPages, p+1))} className="btn btn-sm" disabled={page === totalPages}>Siguiente</button>
-              </div>
             </div>
           </motion.aside>
         </div>
