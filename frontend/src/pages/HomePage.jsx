@@ -25,7 +25,7 @@ const sampleDocs = [
 ];
 
 export default function HomePage({ q = "" }) {
-  const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0].id);
+  const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
   const subjectById = useMemo(
     () => Object.fromEntries(subjects.map((subject) => [subject.id, subject])),
@@ -42,7 +42,7 @@ export default function HomePage({ q = "" }) {
 
   const filtered = useMemo(() => {
     return sampleDocs.filter((doc) => {
-      const sameSubject = doc.subjectId === selectedSubjectId;
+      const sameSubject = !selectedSubjectId || doc.subjectId === selectedSubjectId;
       const matchesQuery =
         doc.title.toLowerCase().includes(query) ||
         doc.author.toLowerCase().includes(query) ||
@@ -71,7 +71,8 @@ export default function HomePage({ q = "" }) {
         />
 
         <div className="md:col-span-3">
-          <article className="card bg-gradient-to-r from-[#006847] to-[#0b8f63] text-white shadow-md mb-6">
+          {!selectedSubjectId && (
+            <article className="card bg-gradient-to-r from-[#006847] to-[#0b8f63] text-white shadow-md mb-6">
             <div className="card-body">
               <h3 className="card-title text-2xl flex items-center gap-2">
                 <FaFutbol />
@@ -92,7 +93,8 @@ export default function HomePage({ q = "" }) {
                 ))}
               </div>
             </div>
-          </article>
+            </article>
+          )}
 
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-bold text-[#111827]">Archivos subidos</h2>
