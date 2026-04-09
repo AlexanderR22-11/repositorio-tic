@@ -44,20 +44,20 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
           </motion.div>
           <div>
             <div className="font-bold text-sm sm:text-base leading-tight">Repositorio UTN</div>
-            <div className="text-[11px] sm:text-xs text-white/80 hidden sm:block">Material académico para Ingeniería</div>
+            <div className="text-[11px] sm:text-xs text-white/80 hidden sm:block">Material académico UT Nayarit</div>
           </div>
         </div>
 
         <nav className="hidden lg:flex items-center gap-4 text-sm">
           <motion.a whileHover={{ y: -2 }} href="/#inicio" className="hover:underline">Inicio</motion.a>
+          <Link to="/explorar" className="hover:underline">Explorar</Link>
           <motion.a whileHover={{ y: -2 }} href="/#materiales" className="hover:underline">Materias</motion.a>
-          <motion.a whileHover={{ y: -2 }} href="/#materiales" className="hover:underline">Archivos</motion.a>
         </nav>
 
-        <div className="hidden md:flex flex-1 justify-center">
+        <div className="hidden md:flex flex-1 justify-center min-w-0">
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="bg-white px-3 py-1 rounded-full flex items-center gap-2 text-black shadow w-full max-w-xl"
+            className="bg-white px-3 py-1 rounded-full flex items-center gap-2 text-black shadow w-full max-w-xl min-w-0"
           >
             <FaSearch />
             <input
@@ -70,7 +70,7 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
           </motion.div>
         </div>
 
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-3 lg:gap-4">
           <motion.button whileHover={{ y: -2 }} onClick={openDashboard} className="btn btn-ghost text-white">Dashboard</motion.button>
 
           {usuario ? (
@@ -85,8 +85,9 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
               <motion.button whileHover={{ y: -2 }} onClick={onLogout} className="btn btn-ghost text-white">Salir</motion.button>
             </>
           ) : (
-            <motion.div whileHover={{ y: -2 }}>
-              <Link to="/login" className="btn btn-outline text-white">Iniciar sesión</Link>
+            <motion.div whileHover={{ y: -2 }} className="flex items-center gap-2">
+              <Link to="/login" className="btn btn-outline text-white btn-sm lg:btn-md">Iniciar sesión</Link>
+              <Link to="/register" className="btn btn-ghost text-white btn-sm lg:btn-md">Registro</Link>
             </motion.div>
           )}
 
@@ -118,15 +119,15 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[116px] bottom-0 bg-black/35 z-30" onClick={() => setIsMenuOpen(false)}>
+        <div className="md:hidden fixed inset-0 pt-[116px] bg-black/35 z-30" onClick={() => setIsMenuOpen(false)}>
           <div
-            className="mx-4 mt-2 rounded-2xl bg-white text-base-content shadow-xl p-4 space-y-4"
+            className="mx-4 rounded-2xl bg-white text-base-content shadow-xl p-4 space-y-4 max-h-[calc(100vh-132px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="flex flex-col gap-2 text-sm">
               <a href="/#inicio" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Inicio</a>
               <a href="/#materiales" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Materias</a>
-              <a href="/#materiales" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Archivos</a>
+              <Link to="/explorar" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Explorar</Link>
             </nav>
 
             {usuario && (
@@ -150,7 +151,10 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
                   Salir
                 </button>
               ) : (
-                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="btn btn-outline">Iniciar sesión</Link>
+                <>
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)} className="btn btn-outline">Iniciar sesión</Link>
+                  <Link to="/register" onClick={() => setIsMenuOpen(false)} className="btn btn-ghost">Registro</Link>
+                </>
               )}
             </div>
           </div>

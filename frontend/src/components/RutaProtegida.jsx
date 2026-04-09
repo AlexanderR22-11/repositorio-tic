@@ -1,12 +1,13 @@
 // src/components/RutaProtegida.jsx
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { getDefaultRouteForRole, getStoredUser, normalizeRole } from "../utils/auth";
+import { getDefaultRouteForRole, getStoredToken, getStoredUser, normalizeRole } from "../utils/auth";
 
 export default function RutaProtegida({ children, rolPermitido }) {
   const usuario = getStoredUser();
+  const token = getStoredToken();
 
-  if (!usuario) {
+  if (!usuario || !token) {
     return <Navigate to="/login" replace />;
   }
 

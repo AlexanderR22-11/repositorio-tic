@@ -25,3 +25,15 @@ export function canTeacherManageSubject(user, subject) {
   const materias = Array.isArray(user?.materias) ? user.materias : [];
   return materias.includes(subject);
 }
+
+
+export function getStoredToken() {
+  return localStorage.getItem("token") || sessionStorage.getItem("token") || null;
+}
+
+export function clearStoredAuth() {
+  localStorage.removeItem("usuario");
+  localStorage.removeItem("token");
+  sessionStorage.removeItem("usuario");
+  sessionStorage.removeItem("token");
+}

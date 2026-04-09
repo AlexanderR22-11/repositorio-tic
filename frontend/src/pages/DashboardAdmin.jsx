@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import DashboardShell from "../components/DashboardShell";
 
 const USERS_KEY = "admin_usuarios";
 const SUBJECTS_KEY = "admin_materias";
@@ -32,17 +33,9 @@ export default function DashboardAdmin() {
   const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", correo: "", role: "alumno" });
   const [filtroRol, setFiltroRol] = useState("");
 
-  useEffect(() => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(usuarios));
-  }, [usuarios]);
-
-  useEffect(() => {
-    localStorage.setItem(SUBJECTS_KEY, JSON.stringify(materias));
-  }, [materias]);
-
-  useEffect(() => {
-    localStorage.setItem(MATERIALS_KEY, JSON.stringify(materiales));
-  }, [materiales]);
+  useEffect(() => localStorage.setItem(USERS_KEY, JSON.stringify(usuarios)), [usuarios]);
+  useEffect(() => localStorage.setItem(SUBJECTS_KEY, JSON.stringify(materias)), [materias]);
+  useEffect(() => localStorage.setItem(MATERIALS_KEY, JSON.stringify(materiales)), [materiales]);
 
   const usuariosFiltrados = useMemo(() => {
     if (!filtroRol) return usuarios;
@@ -52,153 +45,90 @@ export default function DashboardAdmin() {
   const crearUsuario = () => {
     const nombre = nuevoUsuario.nombre.trim();
     const correo = nuevoUsuario.correo.trim().toLowerCase();
-
-    if (!nombre || !correo) {
-      toast.error("Completa nombre y correo");
-      return;
-    }
-
-    const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
-    if (!correoValido) {
-      toast.error("Ingresa un correo válido");
-      return;
-    }
-
-    if (usuarios.some((u) => u.correo.toLowerCase() === correo)) {
-      toast.error("Ya existe un usuario con ese correo");
-      return;
-    }
+    if (!nombre || !correo) return toast.error("Completa nombre y correo");
+    if (usuarios.some((u) => u.correo.toLowerCase() === correo)) return toast.error("Ya existe un usuario con ese correo");
 
     setUsuarios((prev) => [...prev, { ...nuevoUsuario, nombre, correo, id: crypto.randomUUID() }]);
     setNuevoUsuario({ nombre: "", correo: "", role: "alumno" });
     toast.success("Usuario creado");
   };
 
-  const eliminarUsuario = (id) => {
-    setUsuarios((prev) => prev.filter((u) => u.id !== id));
-    toast.success("Usuario eliminado");
-  };
-
-  const agregarMateria = () => {
-    const value = nuevaMateria.trim();
-    if (!value) {
-      toast.error("Escribe una materia");
-      return;
-    }
-
-    if (materias.some((m) => m.toLowerCase() === value.toLowerCase())) {
-      toast.error("La materia ya existe");
-      return;
-    }
-
-    setMaterias((prev) => [...prev, value]);
-    setNuevaMateria("");
-    toast.success("Materia agregada");
-  };
-
-  const eliminarMateria = (m) => {
-    setMaterias((prev) => prev.filter((x) => x !== m));
-    toast.success("Materia eliminada");
-  };
-
-  const eliminarMaterial = (id) => {
-    setMateriales((prev) => prev.filter((m) => m.id !== id));
-    toast.success("Material eliminado del sistema");
-  };
-
-  const limpiarMateriales = () => {
-    if (materiales.length === 0) {
-      toast("No hay materiales para limpiar");
-      return;
-    }
-    setMateriales([]);
-    toast.success("Todos los materiales fueron eliminados");
-  };
-
   return (
-    <div className="min-h-screen bg-base-200 p-6">
+    <div className="min-h-screen bg-base-200">
       <Toaster position="top-right" />
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="navbar bg-primary text-white px-6 rounded-xl">
-          <h1 className="font-bold">Administrador - UTN</h1>
-        </div>
-
-        <h2 className="text-2xl font-bold">Panel de Administración</h2>
-
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="card bg-base-100 shadow p-4">Usuarios: <strong>{usuarios.length}</strong></div>
-          <div className="card bg-base-100 shadow p-4">Materias: <strong>{materias.length}</strong></div>
-          <div className="card bg-base-100 shadow p-4">Materiales: <strong>{materiales.length}</strong></div>
-        </div>
-
-        <section className="grid lg:grid-cols-2 gap-6">
-          <article className="card bg-base-100 shadow p-4 space-y-3">
-            <h3 className="font-semibold">Gestionar usuarios</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <input className="input input-bordered" placeholder="Nombre" value={nuevoUsuario.nombre} onChange={(e) => setNuevoUsuario((s) => ({ ...s, nombre: e.target.value }))} />
-              <input className="input input-bordered" placeholder="Correo" value={nuevoUsuario.correo} onChange={(e) => setNuevoUsuario((s) => ({ ...s, correo: e.target.value }))} />
-              <select className="select select-bordered" value={nuevoUsuario.role} onChange={(e) => setNuevoUsuario((s) => ({ ...s, role: e.target.value }))}>
-                <option value="alumno">Alumno</option>
-                <option value="maestro">Maestro</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-            <button className="btn btn-primary" onClick={crearUsuario}>Crear usuario</button>
-
-            <div className="flex gap-2 items-center">
-              <label className="text-sm">Filtrar por rol:</label>
-              <select className="select select-sm select-bordered" value={filtroRol} onChange={(e) => setFiltroRol(e.target.value)}>
-                <option value="">Todos</option>
-                <option value="alumno">Alumno</option>
-                <option value="maestro">Maestro</option>
-                <option value="admin">Administrador</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              {usuariosFiltrados.map((u) => (
-                <div key={u.id} className="border rounded p-2 flex items-center justify-between gap-2">
-                  <span className="truncate">{u.nombre} ({u.role})</span>
-                  <button className="btn btn-xs btn-error text-white" onClick={() => eliminarUsuario(u.id)}>Eliminar</button>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="card bg-base-100 shadow p-4 space-y-3">
-            <h3 className="font-semibold">Gestionar materias</h3>
-            <div className="flex gap-2">
-              <input className="input input-bordered flex-1" placeholder="Nueva materia" value={nuevaMateria} onChange={(e) => setNuevaMateria(e.target.value)} />
-              <button className="btn btn-primary" onClick={agregarMateria}>Agregar</button>
-            </div>
-            <div className="space-y-2">
-              {materias.map((m) => (
-                <div key={m} className="border rounded p-2 flex items-center justify-between">
-                  <span>{m}</span>
-                  <button className="btn btn-xs btn-error text-white" onClick={() => eliminarMateria(m)}>Eliminar</button>
-                </div>
-              ))}
-            </div>
-          </article>
-        </section>
-
-        <section className="card bg-base-100 shadow p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h3 className="font-semibold">Gestionar todos los materiales</h3>
-            <button className="btn btn-sm btn-outline" onClick={limpiarMateriales}>Limpiar todo</button>
+      <DashboardShell role="admin" description="Supervisa usuarios, materiales, reportes y exportaciones del sistema.">
+        <div className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-3">
+            <div className="stat bg-base-100 rounded-box shadow-sm border border-base-200"><div className="stat-title">Usuarios</div><div className="stat-value text-primary">{usuarios.length}</div></div>
+            <div className="stat bg-base-100 rounded-box shadow-sm border border-base-200"><div className="stat-title">Materias</div><div className="stat-value text-primary">{materias.length}</div></div>
+            <div className="stat bg-base-100 rounded-box shadow-sm border border-base-200"><div className="stat-title">Materiales</div><div className="stat-value text-primary">{materiales.length}</div></div>
           </div>
 
-          <div className="space-y-2">
-            {materiales.length === 0 ? <p className="text-sm text-gray-500">Sin materiales cargados.</p> : null}
-            {materiales.map((m) => (
-              <div key={m.id} className="border rounded p-2 flex items-center justify-between gap-2">
-                <span className="truncate">{m.titulo} — {m.materia}</span>
-                <button className="btn btn-xs btn-error text-white" onClick={() => eliminarMaterial(m.id)}>Eliminar</button>
+
+          <div className="grid lg:grid-cols-3 gap-3">
+            <div className="alert alert-info"><div><span className="badge badge-info badge-outline">Usuarios</span><p className="text-sm mt-1">Crear, filtrar y eliminar cuentas por rol.</p></div></div>
+            <div className="alert alert-info"><div><span className="badge badge-info badge-outline">Materiales</span><p className="text-sm mt-1">Supervisar materiales globales y coordinar limpieza.</p></div></div>
+            <div className="alert alert-info"><div><span className="badge badge-info badge-outline">Reportes</span><p className="text-sm mt-1">Exportaciones y reportes para evidencias de exposición.</p></div></div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <section className="card bg-base-100 shadow-sm border border-base-200">
+              <div className="card-body">
+                <h2 className="card-title">Gestión de usuarios</h2>
+                <div className="grid md:grid-cols-3 gap-2">
+                  <input className="input input-bordered" placeholder="Nombre" value={nuevoUsuario.nombre} onChange={(e) => setNuevoUsuario((s) => ({ ...s, nombre: e.target.value }))} />
+                  <input className="input input-bordered" placeholder="Correo" value={nuevoUsuario.correo} onChange={(e) => setNuevoUsuario((s) => ({ ...s, correo: e.target.value }))} />
+                  <select className="select select-bordered" value={nuevoUsuario.role} onChange={(e) => setNuevoUsuario((s) => ({ ...s, role: e.target.value }))}>
+                    <option value="alumno">Alumno</option><option value="maestro">Maestro</option><option value="admin">Administrador</option>
+                  </select>
+                </div>
+                <button className="btn btn-primary" onClick={crearUsuario}>Crear usuario</button>
+
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra table-sm">
+                    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th></th></tr></thead>
+                    <tbody>
+                      {usuariosFiltrados.map((u) => (
+                        <tr key={u.id}>
+                          <td>{u.nombre}</td><td>{u.correo}</td><td><span className="badge badge-outline">{u.role}</span></td>
+                          <td><button className="btn btn-xs btn-error text-white" onClick={() => setUsuarios((prev) => prev.filter((x) => x.id !== u.id))}>Eliminar</button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <select className="select select-bordered select-sm w-full md:w-52" value={filtroRol} onChange={(e) => setFiltroRol(e.target.value)}>
+                  <option value="">Todos los roles</option><option value="alumno">Alumno</option><option value="maestro">Maestro</option><option value="admin">Administrador</option>
+                </select>
               </div>
-            ))}
+            </section>
+
+            <section className="card bg-base-100 shadow-sm border border-base-200">
+              <div className="card-body">
+                <h2 className="card-title">Materias, reportes y exportaciones</h2>
+                <div className="join join-vertical sm:join-horizontal w-full">
+                  <input className="input input-bordered join-item flex-1" placeholder="Nueva materia" value={nuevaMateria} onChange={(e) => setNuevaMateria(e.target.value)} />
+                  <button className="btn btn-primary join-item sm:w-auto w-full" onClick={() => {
+                    const value = nuevaMateria.trim();
+                    if (!value) return toast.error("Escribe una materia");
+                    if (materias.some((m) => m.toLowerCase() === value.toLowerCase())) return toast.error("La materia ya existe");
+                    setMaterias((prev) => [...prev, value]);
+                    setNuevaMateria("");
+                  }}>Agregar</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {materias.map((m) => <span key={m} className="badge badge-neutral badge-lg">{m}</span>)}
+                </div>
+                <div className="alert alert-info text-sm">Exportaciones y reportes están integrados en backend (rutas /api/admin/*). Esta vista usa simulación local para exposición.</div>
+                <div className="flex flex-wrap gap-2">
+                  <button className="btn btn-outline" onClick={() => toast.success("Exportación CSV simulada")}>Exportar CSV</button>
+                  <button className="btn btn-outline" onClick={() => toast.success("Reporte PDF simulado")}>Generar reporte</button>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
-      </div>
+        </div>
+      </DashboardShell>
     </div>
   );
 }

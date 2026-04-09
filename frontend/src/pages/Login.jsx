@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
@@ -29,13 +29,19 @@ export default function Login() {
   };
 
   const saveAuth = (user, token) => {
-    localStorage.setItem("usuario", JSON.stringify(user));
-    localStorage.setItem("token", token || "mock-token");
-
-    if (!remember) {
-      sessionStorage.setItem("usuario", JSON.stringify(user));
-      sessionStorage.setItem("token", token || "mock-token");
+    const safeToken = token || "mock-token";
+    if (remember) {
+      localStorage.setItem("usuario", JSON.stringify(user));
+      localStorage.setItem("token", safeToken);
+      sessionStorage.removeItem("usuario");
+      sessionStorage.removeItem("token");
+      return;
     }
+
+    sessionStorage.setItem("usuario", JSON.stringify(user));
+    sessionStorage.setItem("token", safeToken);
+    localStorage.removeItem("usuario");
+    localStorage.removeItem("token");
   };
 
   const redirectByRole = (user) => {
@@ -261,6 +267,10 @@ export default function Login() {
                 {loading ? "Ingresando..." : "Iniciar sesión"}
               </button>
             </form>
+
+            <div className="text-right mt-2">
+              <Link to="/forgot-password" className="text-sm text-[#006847] hover:underline">¿Olvidaste tu contraseña?</Link>
+            </div>
 
             <div className="flex items-center my-5">
               <div className="flex-grow h-px bg-gray-200"></div>

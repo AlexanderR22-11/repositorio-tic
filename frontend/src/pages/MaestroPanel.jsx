@@ -5,6 +5,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { HiPlus, HiTrash, HiSearch, HiDocumentText } from "react-icons/hi";
 import { canTeacherManageSubject, getStoredUser, normalizeRole } from "../utils/auth";
 import { getImageForSubject } from "../utils/subjectImages";
+import DashboardShell from "../components/DashboardShell";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ACCEPTED_TYPES = {
@@ -148,10 +149,10 @@ export default function MaestroPanel() {
   const materiasUnicas = Array.from(new Set(materiales.map((m) => m.materia).filter(Boolean)));
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-base-200">
       <Toaster position="top-right" />
-
-      <div className="max-w-6xl mx-auto">
+      <DashboardShell role="maestro" description="Sube, edita y elimina materiales de tus materias autorizadas.">
+      <div className="max-w-6xl">
         <motion.header initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <h1 className="text-3xl font-extrabold text-[#006847]">Panel Maestro</h1>
           <p className="text-sm text-gray-600">
@@ -159,8 +160,20 @@ export default function MaestroPanel() {
           </p>
         </motion.header>
 
-        <div className="mb-4 p-3 rounded-lg bg-white border text-sm text-gray-700">
-          Materias permitidas: <strong>{materiasPermitidas.join(", ") || "Sin materias asignadas"}</strong>
+        <div className="grid md:grid-cols-2 gap-3 mb-4">
+          <div className="alert alert-success">
+            <div>
+              <h3 className="font-semibold">Permisos activos ({role === "admin" ? "Administrador" : "Maestro"})</h3>
+              <p className="text-sm">Puedes subir, editar y eliminar materiales de materias autorizadas.</p>
+              <p className="text-xs mt-1">Materias permitidas: <strong>{materiasPermitidas.join(", ") || "Sin materias asignadas"}</strong></p>
+            </div>
+          </div>
+          <div className="alert alert-info">
+            <div>
+              <h3 className="font-semibold">Regla de control</h3>
+              <p className="text-sm">Si intentas gestionar una materia no asignada, el sistema bloquea la acción.</p>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -192,11 +205,11 @@ export default function MaestroPanel() {
               </p>
             </div>
 
-            <div className="mt-4 flex gap-2">
-              <button onClick={guardarMaterial} className="btn bg-[#006847] text-white flex-1" disabled={uploading || !materiasPermitidas.length}>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <button onClick={guardarMaterial} className="btn bg-[#006847] text-white flex-1 w-full" disabled={uploading || !materiasPermitidas.length}>
                 {uploading ? "Subiendo..." : "Guardar"}
               </button>
-              <button onClick={() => { setTitulo(""); setTipo(""); }} className="btn btn-ghost flex-1">Limpiar</button>
+              <button onClick={() => { setTitulo(""); setTipo(""); }} className="btn btn-ghost flex-1 w-full">Limpiar</button>
             </div>
           </motion.section>
 
@@ -246,6 +259,7 @@ export default function MaestroPanel() {
           </motion.aside>
         </div>
       </div>
+      </DashboardShell>
     </div>
   );
 }

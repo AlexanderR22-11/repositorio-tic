@@ -9,12 +9,12 @@ import { authenticate, authorize } from "../middleware/auth.js";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-router.post("/backup", authenticate, authorize("admin"), backupNow);
-router.post("/restore", authenticate, authorize("admin"), upload.single("file"), restoreNow);
+router.post("/backup", authenticate, authorize(["admin", "superadmin"]), backupNow);
+router.post("/restore", authenticate, authorize(["admin", "superadmin"]), upload.single("file"), restoreNow);
 
-router.get("/export/csv", authenticate, authorize(["admin", "maestro"]), exportDocumentosCSV);
-router.get("/export/json", authenticate, authorize(["admin", "maestro"]), exportDocumentosJSON);
+router.get("/export/csv", authenticate, authorize(["admin", "superadmin", "maestro"]), exportDocumentosCSV);
+router.get("/export/json", authenticate, authorize(["admin", "superadmin", "maestro"]), exportDocumentosJSON);
 
-router.get("/report/pdf", authenticate, authorize(["admin", "maestro", "alumno"]), generarReportePDF);
+router.get("/report/pdf", authenticate, authorize(["admin", "superadmin", "maestro", "alumno"]), generarReportePDF);
 
 export default router;
