@@ -6,13 +6,12 @@ import SubjectSidebar from "../components/SubjectSidebar";
 import { getImageForSubject } from "../utils/subjectImages";
 
 const subjects = [
-  { id: "dw", name: "Desarrollo Web Profesional", teacher: "Ing. Stephany A. López", group: "IDS-8A", filesCount: 4 },
-  { id: "sda", name: "Seguridad en el Desarrollo de Aplicaciones", teacher: "Mtro. Luis E. Castañeda", group: "IDS-8A", filesCount: 2 },
-  { id: "bd", name: "Administración de Base de Datos", teacher: "Mtra. Karina R. Ruiz", group: "IDS-8A", filesCount: 3 },
-  { id: "mat", name: "Matemáticas para Ingeniería II", teacher: "Mtro. Jorge M. Torres", group: "IDS-8A", filesCount: 2 },
-  { id: "poo", name: "Programación Orientada a Objetos", teacher: "Mtro. Héctor I. Beltrán", group: "IDS-8A", filesCount: 3 },
-  { id: "so", name: "Sistemas Operativos", teacher: "Mtra. Daniela V. Pérez", group: "IDS-8A", filesCount: 2 },
-  { id: "red", name: "Redes y Conectividad", teacher: "Ing. Ricardo M. Salas", group: "IDS-8A", filesCount: 2 },
+  { id: "dw", name: "Desarrollo Web Profesional", teacher: "ING. STEPHANY ANAHÍ LÓPEZ LIZÁRRAGA", group: "IDS-81", filesCount: 4 },
+  { id: "sda", name: "Seguridad en el Desarrollo de Aplicaciones", teacher: "ING. OSCAR ARENAS GÓMEZ", group: "IDS-81", filesCount: 2 },
+  { id: "bd", name: "Administración de Base de Datos", teacher: "ING. JUAN MANUEL TOVAR SÁNCHEZ", group: "IDS-81", filesCount: 3 },
+  { id: "mat", name: "Matemáticas para Ingeniería II", teacher: "ING. MARCO FEDERICO ADAME OROPEZA", group: "IDS-81", filesCount: 2 },
+  { id: "poo", name: "INGLES VII", teacher: "Mtro. 	JUAN MANUEL RAMIREZ", group: "IDS-81", filesCount: 3 },
+  { id: "so", name: "Planeación y Organización del Trabajo", teacher: "Mto. LEONARDO DANIEL GUERRA ISIORDIA", group: "IDS-81", filesCount: 2 },
 ];
 
 const sampleDocs = [

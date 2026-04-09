@@ -25,12 +25,36 @@ export default function AlumnoInicio() {
     [materiales]
   );
 
+<<<<<<< Updated upstream
   const filtrados = useMemo(() => {
     const query = q.trim().toLowerCase();
     return materiales.filter((m) => {
       const bySearch = !query || (m.titulo || "").toLowerCase().includes(query) || (m.tipo || "").toLowerCase().includes(query);
       const bySubject = !materia || m.materia === materia;
       return bySearch && bySubject;
+=======
+  useEffect(() => { debounced(q); }, [q, debounced]);
+
+  const clasesBase = [
+    { name: "Desarrollo de Web Profesional", teacher: "Ing. STEPHANY ANAHÍ LÓPEZ LIZÁRRAGA", cover: getImageForSubject("Desarrollo Web") },
+    { name: "Administracion de Bases de Datos", teacher: "Ing. JUAN MANUEL TOVAR SÁNCHEZ", cover: getImageForSubject("Bases de Datos") },
+    { name: "Seguridad en el Desarrollo de Aplicaciones", teacher: "Ing. OSCAR ARENAS GÓMEZ	", cover: getImageForSubject("seguridad") },
+    { name: "Ingles VII", teacher: "JUAN MANUEL RAMIREZ", cover: getImageForSubject("INGLES") },
+    { name: "Planeación y Organización del Trabajo", teacher: "Ing. LEONARDO DANIEL GUERRA ISIORDIA", cover: getImageForSubject("Planeacion") }
+    
+  ];
+  const clases = clasesBase.map((clase) => ({
+    ...clase,
+    filesCount: materiales.filter((m) => m.materia === clase.name).length
+  }));
+  const claseSeleccionada = clases.find((c) => c.name === materiaSel) || null;
+
+  const materialesFiltrados = useMemo(() => {
+    const s = debQ.trim().toLowerCase();
+    return materiales.filter(m => {
+      if (!s) return true;
+      return (m.titulo || "").toLowerCase().includes(s) || (m.materia || "").toLowerCase().includes(s);
+>>>>>>> Stashed changes
     });
   }, [materiales, q, materia]);
 
