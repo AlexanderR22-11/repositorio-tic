@@ -1,5 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+
+const USERS_KEY = "admin_usuarios";
+const SUBJECTS_KEY = "admin_materias";
+const MATERIALS_KEY = "materiales";
 
 const initialUsers = [
   { id: 1, nombre: "Alumno Demo", correo: "alumno@utn.com", role: "alumno" },
@@ -9,20 +13,63 @@ const initialUsers = [
 
 const initialSubjects = ["Desarrollo Web", "Bases de Datos", "POO", "Redes"];
 
+const safeRead = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 export default function DashboardAdmin() {
-  const [usuarios, setUsuarios] = useState(initialUsers);
-  const [materias, setMaterias] = useState(initialSubjects);
+  const [usuarios, setUsuarios] = useState(() => safeRead(USERS_KEY, initialUsers));
+  const [materias, setMaterias] = useState(() => safeRead(SUBJECTS_KEY, initialSubjects));
+  const [materiales, setMateriales] = useState(() => safeRead(MATERIALS_KEY, []));
   const [nuevaMateria, setNuevaMateria] = useState("");
   const [nuevoUsuario, setNuevoUsuario] = useState({ nombre: "", correo: "", role: "alumno" });
+  const [filtroRol, setFiltroRol] = useState("");
 
-  const materiales = useMemo(() => JSON.parse(localStorage.getItem("materiales") || "[]"), [usuarios, materias]);
+  useEffect(() => {
+    localStorage.setItem(USERS_KEY, JSON.stringify(usuarios));
+  }, [usuarios]);
+
+  useEffect(() => {
+    localStorage.setItem(SUBJECTS_KEY, JSON.stringify(materias));
+  }, [materias]);
+
+  useEffect(() => {
+    localStorage.setItem(MATERIALS_KEY, JSON.stringify(materiales));
+  }, [materiales]);
+
+  const usuariosFiltrados = useMemo(() => {
+    if (!filtroRol) return usuarios;
+    return usuarios.filter((u) => u.role === filtroRol);
+  }, [usuarios, filtroRol]);
 
   const crearUsuario = () => {
-    if (!nuevoUsuario.nombre.trim() || !nuevoUsuario.correo.trim()) {
+    const nombre = nuevoUsuario.nombre.trim();
+    const correo = nuevoUsuario.correo.trim().toLowerCase();
+
+    if (!nombre || !correo) {
       toast.error("Completa nombre y correo");
       return;
     }
-    setUsuarios((prev) => [...prev, { ...nuevoUsuario, id: crypto.randomUUID() }]);
+
+    const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+    if (!correoValido) {
+      toast.error("Ingresa un correo válido");
+      return;
+    }
+
+    if (usuarios.some((u) => u.correo.toLowerCase() === correo)) {
+      toast.error("Ya existe un usuario con ese correo");
+      return;
+    }
+
+    setUsuarios((prev) => [...prev, { ...nuevoUsuario, nombre, correo, id: crypto.randomUUID() }]);
     setNuevoUsuario({ nombre: "", correo: "", role: "alumno" });
     toast.success("Usuario creado");
   };
@@ -34,11 +81,16 @@ export default function DashboardAdmin() {
 
   const agregarMateria = () => {
     const value = nuevaMateria.trim();
-    if (!value) return;
-    if (materias.includes(value)) {
+    if (!value) {
+      toast.error("Escribe una materia");
+      return;
+    }
+
+    if (materias.some((m) => m.toLowerCase() === value.toLowerCase())) {
       toast.error("La materia ya existe");
       return;
     }
+
     setMaterias((prev) => [...prev, value]);
     setNuevaMateria("");
     toast.success("Materia agregada");
@@ -50,11 +102,17 @@ export default function DashboardAdmin() {
   };
 
   const eliminarMaterial = (id) => {
-    const actual = JSON.parse(localStorage.getItem("materiales") || "[]");
-    localStorage.setItem("materiales", JSON.stringify(actual.filter((m) => m.id !== id)));
+    setMateriales((prev) => prev.filter((m) => m.id !== id));
     toast.success("Material eliminado del sistema");
-    // Trigger render mínimo
-    setMaterias((prev) => [...prev]);
+  };
+
+  const limpiarMateriales = () => {
+    if (materiales.length === 0) {
+      toast("No hay materiales para limpiar");
+      return;
+    }
+    setMateriales([]);
+    toast.success("Todos los materiales fueron eliminados");
   };
 
   return (
@@ -87,10 +145,20 @@ export default function DashboardAdmin() {
             </div>
             <button className="btn btn-primary" onClick={crearUsuario}>Crear usuario</button>
 
+            <div className="flex gap-2 items-center">
+              <label className="text-sm">Filtrar por rol:</label>
+              <select className="select select-sm select-bordered" value={filtroRol} onChange={(e) => setFiltroRol(e.target.value)}>
+                <option value="">Todos</option>
+                <option value="alumno">Alumno</option>
+                <option value="maestro">Maestro</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+
             <div className="space-y-2">
-              {usuarios.map((u) => (
-                <div key={u.id} className="border rounded p-2 flex items-center justify-between">
-                  <span>{u.nombre} ({u.role})</span>
+              {usuariosFiltrados.map((u) => (
+                <div key={u.id} className="border rounded p-2 flex items-center justify-between gap-2">
+                  <span className="truncate">{u.nombre} ({u.role})</span>
                   <button className="btn btn-xs btn-error text-white" onClick={() => eliminarUsuario(u.id)}>Eliminar</button>
                 </div>
               ))}
@@ -115,12 +183,16 @@ export default function DashboardAdmin() {
         </section>
 
         <section className="card bg-base-100 shadow p-4">
-          <h3 className="font-semibold mb-3">Gestionar todos los materiales</h3>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="font-semibold">Gestionar todos los materiales</h3>
+            <button className="btn btn-sm btn-outline" onClick={limpiarMateriales}>Limpiar todo</button>
+          </div>
+
           <div className="space-y-2">
             {materiales.length === 0 ? <p className="text-sm text-gray-500">Sin materiales cargados.</p> : null}
             {materiales.map((m) => (
-              <div key={m.id} className="border rounded p-2 flex items-center justify-between">
-                <span>{m.titulo} — {m.materia}</span>
+              <div key={m.id} className="border rounded p-2 flex items-center justify-between gap-2">
+                <span className="truncate">{m.titulo} — {m.materia}</span>
                 <button className="btn btn-xs btn-error text-white" onClick={() => eliminarMaterial(m.id)}>Eliminar</button>
               </div>
             ))}
