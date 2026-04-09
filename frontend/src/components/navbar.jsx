@@ -8,6 +8,9 @@ import { motion } from "framer-motion";
 export default function Navbar({ usuario, onLogout, q, setQ }) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const role = (usuario?.role || usuario?.rol || "").toLowerCase();
+  const isAlumno = role === "alumno";
+  const homeTarget = isAlumno ? "/dashboard/alumno" : "/";
 
   useEffect(() => {
     document.body.style.overflow = isMenuOpen ? "hidden" : "";
@@ -19,7 +22,6 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
   const openDashboard = () => {
     setIsMenuOpen(false);
     if (!usuario) return navigate("/login");
-    const role = (usuario?.role || usuario?.rol || "").toLowerCase();
 
     let destino = "/dashboard/alumno";
     if (role === "maestro") destino = "/dashboard/maestro";
@@ -38,7 +40,7 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
       <div className="max-w-7xl mx-auto flex items-center gap-3 md:gap-6">
         <div className="flex items-center gap-3">
           <motion.div whileHover={{ rotate: -4, scale: 1.04 }}>
-            <Link to="/">
+            <Link to={homeTarget}>
               <img src="/logo-utn.png" alt="UTN" className="w-10 h-10" />
             </Link>
           </motion.div>
@@ -49,9 +51,9 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
         </div>
 
         <nav className="hidden lg:flex items-center gap-4 text-sm">
-          <motion.a whileHover={{ y: -2 }} href="/#inicio" className="hover:underline">Inicio</motion.a>
+          <Link to={homeTarget} className="hover:underline">Inicio</Link>
           <Link to="/explorar" className="hover:underline">Explorar</Link>
-          <motion.a whileHover={{ y: -2 }} href="/#materiales" className="hover:underline">Materias</motion.a>
+          <a href={`${homeTarget}#materiales`} className="hover:underline">Materias</a>
         </nav>
 
         <div className="hidden md:flex flex-1 justify-center min-w-0">
@@ -125,8 +127,8 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
             onClick={(e) => e.stopPropagation()}
           >
             <nav className="flex flex-col gap-2 text-sm">
-              <a href="/#inicio" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Inicio</a>
-              <a href="/#materiales" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Materias</a>
+              <Link to={homeTarget} className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
+              <a href={`${homeTarget}#materiales`} className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Materias</a>
               <Link to="/explorar" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Explorar</Link>
             </nav>
 

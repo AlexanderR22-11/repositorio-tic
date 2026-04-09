@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { useMemo, useState } from "react";
 
 import HomePage from "./pages/HomePage";
-import AlumnoInicio from "./pages/AlumnoInicio";
 import MaestroPanel from "./pages/MaestroPanel";
 import DashboardAdmin from "./pages/DashboardAdmin";
 import Login from "./pages/Login";
@@ -47,25 +46,17 @@ function AppRoutes() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Alumno: vista completa con materiales y acciones funcionales. */}
+          {/* Dashboard del alumno: reutiliza HomePage como experiencia principal. */}
           <Route
             path="/dashboard/alumno"
             element={
               <RutaProtegida rolPermitido="alumno">
-                <AlumnoInicio />
+                <HomePage />
               </RutaProtegida>
             }
           />
 
-          {/* Ruta legacy: se conserva por compatibilidad, sin romper flujo existente. */}
-          <Route
-            path="/alumno/inicio"
-            element={
-              <RutaProtegida rolPermitido="alumno">
-                <AlumnoInicio />
-              </RutaProtegida>
-            }
-          />
+          <Route path="/alumno/inicio" element={<Navigate to="/dashboard/alumno" replace />} />
 
           <Route
             path="/dashboard/maestro"
