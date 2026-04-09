@@ -119,7 +119,7 @@ export default function HomePage({ q = "" }) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold text-primary">Repositorio UTN</h1>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-[#006847]">Repositorio UTN</h1>
             <p className="text-sm text-base-content/70">Ingeniería en Desarrollo y Gestión de Software</p>
           </div>
         </div>
