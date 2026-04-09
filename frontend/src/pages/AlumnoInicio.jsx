@@ -6,6 +6,7 @@ import {
   FaStar,
   FaBell,
   FaBook,
+  FaChalkboardTeacher,
   FaSearch,
   FaDownload,
   FaRegFilePdf,
@@ -84,31 +85,66 @@ function Navbar({ q, setQ, theme, toggleTheme }) {
   );
 }
 
-function Sidebar({ materias, onSelect, q }) {
-  const filtradas = materias.filter(m => m.toLowerCase().includes(q.toLowerCase()));
+function Sidebar({ clases, onSelect, onGoHome, q, claseActiva }) {
+  const filtradas = clases.filter(({ name, teacher }) => {
+    const text = `${name} ${teacher}`.toLowerCase();
+    return text.includes(q.toLowerCase());
+  });
   return (
     <aside className="w-72 bg-white p-4 shadow-lg h-[calc(100vh-72px)] overflow-auto">
-      <h2 className="font-bold text-lg mb-4">📚 Materias</h2>
+      <h2 className="font-bold text-lg mb-4">📚 Clases</h2>
+      <button
+        onClick={onGoHome}
+        className={`w-full text-left p-3 rounded-lg mb-3 transition border ${
+          !claseActiva ? "bg-green-50 border-green-200" : "hover:bg-green-50 border-transparent"
+        }`}
+      >
+        <div className="font-medium">Inicio</div>
+        <div className="text-xs text-gray-400">Ver actividad reciente</div>
+      </button>
       <div className="flex flex-col gap-2">
-        {filtradas.map((m, i) => (
+        {filtradas.map((clase, i) => (
           <motion.button
-            key={m}
+            key={clase.name}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.03 }}
-            onClick={() => onSelect(m)}
-            className="text-left p-3 rounded-lg hover:bg-green-50 transition flex items-center gap-3"
-            aria-label={`Abrir materia ${m}`}
+            onClick={() => onSelect(clase.name)}
+            className={`text-left p-3 rounded-lg transition flex items-center gap-3 ${
+              claseActiva === clase.name ? "bg-green-50" : "hover:bg-green-50"
+            }`}
+            aria-label={`Abrir clase ${clase.name}`}
           >
             <FaBook className="text-[#006847]" />
             <div>
-              <div className="font-medium">{m}</div>
-              <div className="text-xs text-gray-400">Ver materiales</div>
+              <div className="font-medium">{clase.name}</div>
+              <div className="text-xs text-gray-400">{clase.teacher}</div>
             </div>
           </motion.button>
         ))}
       </div>
     </aside>
+  );
+}
+
+function ClassroomHeader({ clase }) {
+  if (!clase) return null;
+  return (
+    <article className="relative overflow-hidden rounded-2xl shadow-md mb-5 min-h-[180px]">
+      <img
+        src={clase.cover}
+        alt={`Portada de ${clase.name}`}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/45 to-black/30" />
+      <div className="relative p-6 text-white">
+        <h2 className="text-3xl font-bold">{clase.name}</h2>
+        <p className="mt-2 flex items-center gap-2 text-white/90">
+          <FaChalkboardTeacher />
+          {clase.teacher}
+        </p>
+      </div>
+    </article>
   );
 }
 
@@ -219,8 +255,18 @@ export default function AlumnoInicio() {
 
   useEffect(() => { debounced(q); }, [q, debounced]);
 
-  const materiasBase = ["Desarrollo Web", "Bases de Datos", "POO", "Redes", "Sistemas Operativos"];
-  const materias = Array.from(new Set([...materiasBase, ...materiales.map(m => m.materia).filter(Boolean)]));
+  const clasesBase = [
+    { name: "Desarrollo Web", teacher: "Ing. Laura Méndez", cover: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1400&q=80" },
+    { name: "Bases de Datos", teacher: "Mtro. Daniel Rojas", cover: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400&q=80" },
+    { name: "POO", teacher: "Ing. Ana Sofía Ruiz", cover: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1400&q=80" },
+    { name: "Redes", teacher: "Mtro. Carlos Herrera", cover: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80" },
+    { name: "Sistemas Operativos", teacher: "Ing. José Luis Vega", cover: "https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1400&q=80" }
+  ];
+  const clases = clasesBase.map((clase) => ({
+    ...clase,
+    filesCount: materiales.filter((m) => m.materia === clase.name).length
+  }));
+  const claseSeleccionada = clases.find((c) => c.name === materiaSel) || null;
 
   const materialesFiltrados = useMemo(() => {
     const s = debQ.trim().toLowerCase();
@@ -259,7 +305,13 @@ export default function AlumnoInicio() {
       <Navbar q={q} setQ={setQ} theme={theme} toggleTheme={() => setTheme(theme === "dark" ? "light" : "dark")} />
 
       <div className="flex gap-6 p-6 max-w-7xl mx-auto">
-        <Sidebar materias={materias} onSelect={(m) => setMateriaSel(m)} q={q} />
+        <Sidebar
+          clases={clases}
+          onSelect={(m) => setMateriaSel(m)}
+          onGoHome={() => setMateriaSel(null)}
+          q={q}
+          claseActiva={materiaSel}
+        />
 
         <main className="flex-1">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -314,7 +366,7 @@ export default function AlumnoInicio() {
                 </>
               ) : (
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">{materiaSel}</h2>
+                  <ClassroomHeader clase={claseSeleccionada} />
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {materiales.filter(x => x.materia === materiaSel).length === 0 ? <div className="p-6 bg-white rounded shadow text-gray-500">No hay materiales en esta materia</div> : materiales.filter(x => x.materia === materiaSel).map((m, i) => (
                       <MaterialCard key={i} m={m} onToggleFav={toggleFavorito} isFav={favoritos.some(f => f.titulo === m.titulo && f.materia === m.materia)} onPreview={(mat) => setPreview({ open: true, material: mat })} />
@@ -324,32 +376,34 @@ export default function AlumnoInicio() {
               )}
             </section>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 bg-white rounded-lg p-4 shadow">
-                <h3 className="font-semibold mb-3">Actividad reciente</h3>
-                <div className="space-y-2">
-                  {notificaciones.slice(0, 6).map((n, i) => (
-                    <div key={i} className="p-3 rounded border border-gray-100 flex items-start gap-3">
-                      <FaRegFileAlt className="text-gray-400 mt-1" />
-                      <div>
-                        <div className="text-sm">{n.mensaje}</div>
-                        <div className="text-xs text-gray-400">{i === 0 ? "Hace unos segundos" : `${i+1} días atrás`}</div>
+            {!materiaSel && (
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 bg-white rounded-lg p-4 shadow">
+                  <h3 className="font-semibold mb-3">Actividad reciente</h3>
+                  <div className="space-y-2">
+                    {notificaciones.slice(0, 6).map((n, i) => (
+                      <div key={i} className="p-3 rounded border border-gray-100 flex items-start gap-3">
+                        <FaRegFileAlt className="text-gray-400 mt-1" />
+                        <div>
+                          <div className="text-sm">{n.mensaje}</div>
+                          <div className="text-xs text-gray-400">{i === 0 ? "Hace unos segundos" : `${i+1} días atrás`}</div>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 shadow">
+                  <h3 className="font-semibold mb-3">Favoritos</h3>
+                  {favoritos.length === 0 ? <div className="text-gray-500">Aún no tienes favoritos</div> : favoritos.slice(0, 6).map((f, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                      <div className="text-sm">{f.titulo}</div>
+                      <div className="text-xs text-gray-400">{f.materia}</div>
                     </div>
                   ))}
                 </div>
               </div>
-
-              <div className="bg-white rounded-lg p-4 shadow">
-                <h3 className="font-semibold mb-3">Favoritos</h3>
-                {favoritos.length === 0 ? <div className="text-gray-500">Aún no tienes favoritos</div> : favoritos.slice(0, 6).map((f, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                    <div className="text-sm">{f.titulo}</div>
-                    <div className="text-xs text-gray-400">{f.materia}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </motion.div>
         </main>
       </div>
