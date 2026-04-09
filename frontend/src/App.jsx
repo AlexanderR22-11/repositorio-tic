@@ -34,8 +34,9 @@ function AppRoutes() {
       )}
 
       <div
-        className="min-h-screen"
-        style={{ paddingTop: hideNavbarOn.includes(location.pathname) ? 0 : 72 }}
+        className={`min-h-screen ${
+          hideNavbarOn.includes(location.pathname) ? "" : "pt-[126px] md:pt-[72px]"
+        }`}
       >
         <Routes>
           {/* La homepage actual se conserva como experiencia base de consulta. */}

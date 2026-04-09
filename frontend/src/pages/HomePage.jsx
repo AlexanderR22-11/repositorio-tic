@@ -109,7 +109,7 @@ export default function HomePage({ q = "" }) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.6 }}
         transition={{ duration: 0.35 }}
-        className="max-w-7xl mx-auto px-6 pt-3 pb-2"
+        className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-2"
       >
         <div className="flex items-center justify-between">
           <div>
@@ -119,7 +119,7 @@ export default function HomePage({ q = "" }) {
         </div>
       </motion.header>
 
-      <section className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 mt-1" id="materiales">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mt-1" id="materiales">
         <SubjectSidebar
           subjects={subjectsWithCount}
           selectedSubjectId={selectedSubjectId}
@@ -170,7 +170,7 @@ export default function HomePage({ q = "" }) {
             initial={{ opacity: 0, y: 14 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.4 }}
-            className="mb-6 flex items-center justify-between"
+            className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
           >
             <h2 className="text-xl font-bold">Archivos disponibles</h2>
             <span className="text-xs text-base-content/70">Mostrando máximo 8 archivos</span>
@@ -181,7 +181,7 @@ export default function HomePage({ q = "" }) {
               No hay archivos para esta materia con ese filtro.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {visibleDocs.map((doc) => <DocumentCard key={doc.id} doc={doc} />)}
             </div>
           )}
