@@ -5,6 +5,7 @@ import { useState } from "react";
 import HomePage from "./pages/HomePage";
 import AlumnoInicio from "./pages/AlumnoInicio";
 import MaestroPanel from "./pages/MaestroPanel";
+import DashboardAdmin from "./pages/DashboardAdmin";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RutaProtegida from "./components/RutaProtegida";
@@ -53,6 +54,15 @@ function AppRoutes() {
             element={
               <RutaProtegida rolPermitido="maestro">
                 <MaestroPanel />
+              </RutaProtegida>
+            }
+          />
+
+          <Route
+            path="/dashboard/admin"
+            element={
+              <RutaProtegida rolPermitido="admin">
+                <DashboardAdmin />
               </RutaProtegida>
             }
           />
