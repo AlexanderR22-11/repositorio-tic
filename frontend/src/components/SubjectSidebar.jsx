@@ -9,7 +9,7 @@ export default function SubjectSidebar({ subjects, selectedSubjectId, onSelect }
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.35 }}
-      className="md:col-span-1 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 h-fit"
+      className="md:col-span-1 bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100 h-fit"
     >
       <div className="mb-3">
         <h4 className="font-bold text-[#006847]">Clases</h4>
@@ -42,11 +42,11 @@ export default function SubjectSidebar({ subjects, selectedSubjectId, onSelect }
                   <div className="mt-0.5 text-[#006847]">
                     <FaBookOpen />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900">{subject.name}</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-gray-900 break-words">{subject.name}</p>
+                    <p className="text-xs text-gray-500 flex items-start gap-1 mt-1 break-words">
                       <FaChalkboardTeacher />
-                      {subject.teacher}
+                      <span>{subject.teacher}</span>
                     </p>
                     <p className="text-xs text-gray-500 mt-1">{subject.filesCount} archivos</p>
                   </div>
