@@ -45,12 +45,12 @@ function AppRoutes() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Alumno: reutiliza la vista actual de consulta (HomePage). */}
+          {/* Alumno: vista completa con materiales y acciones funcionales. */}
           <Route
             path="/dashboard/alumno"
             element={
               <RutaProtegida rolPermitido="alumno">
-                <HomePage q={q} />
+                <AlumnoInicio />
               </RutaProtegida>
             }
           />
