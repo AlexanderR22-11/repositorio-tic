@@ -144,11 +144,6 @@ export default function HomePage({ q = "" }) {
         </div>
       </section>
 
-      <footer className="mt-12 py-8 bg-white">
-        <div className="max-w-7xl mx-auto px-6 text-sm text-gray-600">
-          © 2026 Universidad Tecnológica de Nayarit — Ingeniería en Desarrollo y Gestión de Software
-        </div>
-      </footer>
     </main>
   );
 }

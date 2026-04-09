@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import RutaProtegida from "./components/RutaProtegida";
 import Navbar from "./components/navbar";
+import Footer from "./components/Footer";
 
 function AppRoutes() {
   const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -85,6 +86,8 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+
+      {!hideNavbarOn.includes(location.pathname) && <Footer />}
     </>
   );
 }
