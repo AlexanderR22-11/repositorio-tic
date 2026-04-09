@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { FaCalendarAlt, FaClock, FaFutbol } from "react-icons/fa";
+import { motion } from "framer-motion";
 import DocumentCard from "../components/DocumentCard";
 import SubjectSidebar from "../components/SubjectSidebar";
 
@@ -52,16 +53,24 @@ export default function HomePage({ q = "" }) {
     });
   }, [query, selectedSubjectId]);
 
+  const visibleDocs = filtered.slice(0, 4);
+
   return (
     <main className="min-h-screen bg-[#F7F7F8]" id="inicio">
-      <header className="max-w-7xl mx-auto px-6 pt-3 pb-2">
+      <motion.header
+        initial={{ opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.35 }}
+        className="max-w-7xl mx-auto px-6 pt-3 pb-2"
+      >
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-extrabold text-[#006847]">Repositorio UTN</h1>
             <p className="text-sm text-gray-600">Ingeniería en Desarrollo y Gestión de Software</p>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <section className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-6 mt-1" id="materiales">
         <SubjectSidebar
@@ -72,42 +81,64 @@ export default function HomePage({ q = "" }) {
 
         <div className="md:col-span-3">
           {!selectedSubjectId && (
-            <article className="card bg-gradient-to-r from-[#006847] to-[#0b8f63] text-white shadow-md mb-6">
-            <div className="card-body">
-              <h3 className="card-title text-2xl flex items-center gap-2">
-                <FaFutbol />
-                Archivos recientes subidos
-              </h3>
-              <p className="text-white/90">Últimos 4 archivos subidos al repositorio.</p>
+            <motion.article
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.35 }}
+              className="card bg-gradient-to-r from-[#006847] to-[#0b8f63] text-white shadow-md mb-6"
+            >
+              <div className="card-body">
+                <h3 className="card-title text-2xl flex items-center gap-2">
+                  <FaFutbol />
+                  Archivos recientes subidos
+                </h3>
+                <p className="text-white/90">Últimos 4 archivos subidos al repositorio.</p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                {recentMatches.map((doc) => (
-                  <div key={doc.id} className="rounded-xl bg-white/10 border border-white/20 px-3 py-2">
-                    <p className="font-semibold text-sm">{doc.title}</p>
-                    <p className="text-xs text-white/85 mt-1">{subjectById[doc.subjectId]?.name}</p>
-                    <p className="text-xs text-white/85 mt-1 flex items-center gap-3">
-                      <span className="inline-flex items-center gap-1"><FaCalendarAlt /> {doc.date}</span>
-                      <span className="inline-flex items-center gap-1"><FaClock /> Reciente</span>
-                    </p>
-                  </div>
-                ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                  {recentMatches.map((doc, idx) => (
+                    <motion.div
+                      key={doc.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.3 }}
+                      transition={{ delay: idx * 0.06, duration: 0.2 }}
+                      whileHover={{ y: -4 }}
+                      className="rounded-xl bg-white/10 border border-white/20 px-3 py-2"
+                    >
+                      <p className="font-semibold text-sm">{doc.title}</p>
+                      <p className="text-xs text-white/85 mt-1">{subjectById[doc.subjectId]?.name}</p>
+                      <p className="text-xs text-white/85 mt-1 flex items-center gap-3">
+                        <span className="inline-flex items-center gap-1"><FaCalendarAlt /> {doc.date}</span>
+                        <span className="inline-flex items-center gap-1"><FaClock /> Reciente</span>
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </div>
-            </article>
+            </motion.article>
           )}
 
-          <div className="mb-6 flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            className="mb-6 flex items-center justify-between"
+          >
             <h2 className="text-xl font-bold text-[#111827]">Archivos subidos</h2>
-            <a href="/explorar" className="text-sm text-[#006847]">Ver todos</a>
-          </div>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-gray-500">Mostrando máximo 4 archivos</span>
+              <a href="/explorar" className="text-sm text-[#006847] hover:underline">Ver todos</a>
+            </div>
+          </motion.div>
 
-          {filtered.length === 0 ? (
+          {visibleDocs.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
               No hay archivos para esta materia con ese filtro.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
-              {filtered.map((doc) => <DocumentCard key={doc.id} doc={doc} />)}
+              {visibleDocs.map((doc) => <DocumentCard key={doc.id} doc={doc} />)}
             </div>
           )}
         </div>
