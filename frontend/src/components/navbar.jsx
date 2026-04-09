@@ -1,38 +1,64 @@
 // src/components/Navbar.jsx
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import DarkModeToggle from "./DarkModeToggle";
-import { FaSearch, FaUserCircle } from "react-icons/fa";
+import { FaBars, FaSearch, FaTimes, FaUserCircle } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 export default function Navbar({ usuario, onLogout, q, setQ }) {
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
 
   const openDashboard = () => {
+    setIsMenuOpen(false);
     if (!usuario) return navigate("/login");
-    const destino = usuario.rol === "maestro" ? "/dashboard/maestro" : "/dashboard/alumno";
+    const role = (usuario?.role || usuario?.rol || "").toLowerCase();
+
+    let destino = "/dashboard/alumno";
+    if (role === "maestro") destino = "/dashboard/maestro";
+    if (role === "admin" || role === "superadmin") destino = "/dashboard/admin";
+
     navigate(destino);
   };
 
   return (
-    <header className="w-full bg-[#006847] text-white px-6 py-3 shadow-md fixed top-0 left-0 right-0 z-40">
-      <div className="max-w-7xl mx-auto flex items-center gap-6">
+    <motion.header
+      initial={{ y: -35, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="w-full bg-[#006847] text-white px-4 sm:px-6 py-3 shadow-md fixed top-0 left-0 right-0 z-40"
+    >
+      <div className="max-w-7xl mx-auto flex items-center gap-3 md:gap-6">
         <div className="flex items-center gap-3">
-          <Link to="/">
-            <img src="/logo-utn.png" alt="UTN" className="w-10 h-10" />
-          </Link>
+          <motion.div whileHover={{ rotate: -4, scale: 1.04 }}>
+            <Link to="/">
+              <img src="/logo-utn.png" alt="UTN" className="w-10 h-10" />
+            </Link>
+          </motion.div>
           <div>
-            <div className="font-bold">Repositorio UTN</div>
-            <div className="text-xs text-white/80">Material académico para Ingeniería</div>
+            <div className="font-bold text-sm sm:text-base leading-tight">Repositorio UTN</div>
+            <div className="text-[11px] sm:text-xs text-white/80 hidden sm:block">Material académico para Ingeniería</div>
           </div>
         </div>
 
         <nav className="hidden lg:flex items-center gap-4 text-sm">
-          <a href="/#inicio" className="hover:underline">Inicio</a>
-          <a href="/#materiales" className="hover:underline">Materias</a>
-          <a href="/#materiales" className="hover:underline">Archivos</a>
+          <motion.a whileHover={{ y: -2 }} href="/#inicio" className="hover:underline">Inicio</motion.a>
+          <motion.a whileHover={{ y: -2 }} href="/#materiales" className="hover:underline">Materias</motion.a>
+          <motion.a whileHover={{ y: -2 }} href="/#materiales" className="hover:underline">Archivos</motion.a>
         </nav>
 
-        <div className="flex-1 flex justify-center">
-          <div className="bg-white px-3 py-1 rounded-full flex items-center gap-2 text-black shadow w-full max-w-xl">
+        <div className="hidden md:flex flex-1 justify-center">
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className="bg-white px-3 py-1 rounded-full flex items-center gap-2 text-black shadow w-full max-w-xl"
+          >
             <FaSearch />
             <input
               value={q || ""}
@@ -41,30 +67,95 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
               className="outline-none bg-transparent w-full"
               aria-label="Buscar en repositorio"
             />
-          </div>
+          </motion.div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <button onClick={openDashboard} className="btn btn-ghost text-white">Dashboard</button>
+        <div className="hidden md:flex items-center gap-4">
+          <motion.button whileHover={{ y: -2 }} onClick={openDashboard} className="btn btn-ghost text-white">Dashboard</motion.button>
 
           {usuario ? (
             <>
               <div className="flex items-center gap-2">
                 <FaUserCircle className="text-2xl" />
-                <div className="text-sm">
-                  <div className="font-medium">{usuario.nombre}</div>
-                  <div className="text-xs text-white/80">{usuario.correo}</div>
+                <div className="text-sm min-w-0 max-w-52">
+                  <div className="font-medium truncate">{usuario.nombre}</div>
+                  <div className="text-xs text-white/80 truncate">{usuario.correo}</div>
                 </div>
               </div>
-              <button onClick={onLogout} className="btn btn-ghost text-white">Salir</button>
+              <motion.button whileHover={{ y: -2 }} onClick={onLogout} className="btn btn-ghost text-white">Salir</motion.button>
             </>
           ) : (
-            <Link to="/login" className="btn btn-outline text-white">Iniciar sesión</Link>
+            <motion.div whileHover={{ y: -2 }}>
+              <Link to="/login" className="btn btn-outline text-white">Iniciar sesión</Link>
+            </motion.div>
           )}
 
           <DarkModeToggle />
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+          className="md:hidden ml-auto btn btn-ghost btn-circle text-white"
+          aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={isMenuOpen}
+        >
+          {isMenuOpen ? <FaTimes className="text-lg" /> : <FaBars className="text-lg" />}
+        </button>
       </div>
-    </header>
+
+      <div className="max-w-7xl mx-auto mt-3 md:hidden">
+        <div className="bg-white px-3 py-2 rounded-full flex items-center gap-2 text-black shadow w-full">
+          <FaSearch />
+          <input
+            value={q || ""}
+            onChange={(e) => setQ && setQ(e.target.value)}
+            placeholder="Buscar..."
+            className="outline-none bg-transparent w-full text-sm"
+            aria-label="Buscar en repositorio"
+          />
+        </div>
+      </div>
+
+      {isMenuOpen && (
+        <div className="md:hidden fixed inset-x-0 top-[116px] bottom-0 bg-black/35 z-30" onClick={() => setIsMenuOpen(false)}>
+          <div
+            className="mx-4 mt-2 rounded-2xl bg-white text-base-content shadow-xl p-4 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <nav className="flex flex-col gap-2 text-sm">
+              <a href="/#inicio" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Inicio</a>
+              <a href="/#materiales" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Materias</a>
+              <a href="/#materiales" className="btn btn-ghost justify-start" onClick={() => setIsMenuOpen(false)}>Archivos</a>
+            </nav>
+
+            {usuario && (
+              <div className="rounded-xl bg-base-200 p-3">
+                <p className="font-semibold text-sm truncate">{usuario.nombre}</p>
+                <p className="text-xs text-base-content/70 truncate">{usuario.correo}</p>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <button type="button" onClick={openDashboard} className="btn btn-primary">Dashboard</button>
+              {usuario ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onLogout && onLogout();
+                  }}
+                  className="btn btn-outline"
+                >
+                  Salir
+                </button>
+              ) : (
+                <Link to="/login" onClick={() => setIsMenuOpen(false)} className="btn btn-outline">Iniciar sesión</Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </motion.header>
   );
 }
