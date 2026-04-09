@@ -1,16 +1,119 @@
-# React + Vite
+# Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este frontend usa **Vite**, por lo que antes de compilar debes instalar dependencias del proyecto.
 
-Currently, two official plugins are available:
+## Instalación
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+cd frontend
+npm install
+```
 
-## React Compiler
+## Ejecución local
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Build de producción
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run build
+```
+
+Si te aparece el error:
+
+```bash
+sh: 1: vite: not found
+```
+
+significa que **no están instaladas correctamente las dependencias** (o `node_modules` quedó incompleto).
+
+### Pasos recomendados para corregirlo
+
+
+### Opción rápida (recomendada)
+
+Puedes ejecutar una reconstrucción limpia automática con:
+
+```bash
+npm run rebuild:clean
+```
+
+Este comando:
+- elimina `node_modules`,
+- ejecuta `npm ci`,
+- y después `npm run build`.
+
+1. Verifica versión de Node (se recomienda Node 20+):
+
+```bash
+node -v
+```
+
+2. Reinstala dependencias:
+
+```bash
+cd frontend
+npm install
+```
+
+3. Si persiste, elimina `node_modules` y reinstala (en tu máquina local):
+
+```bash
+rm -rf node_modules
+npm ci
+npm run build
+```
+
+## Capturas de pantalla en este entorno de agente
+
+Cuando el entorno no expone `browser_container`, el agente **no puede generar screenshots automáticos**.
+En ese caso, realiza una validación visual manual local:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Y toma capturas desde tu navegador para adjuntarlas al PR.
+
+
+## ¿Cómo solucionarlo manualmente?
+
+Si `npm run rebuild:clean` se queda colgado, normalmente es problema de red/proxy y no de código.
+
+1. Ejecuta diagnóstico:
+
+```bash
+cd frontend
+npm run diagnose:build
+```
+
+2. Si estás en red corporativa, configura proxy npm (reemplaza datos):
+
+```bash
+npm config set proxy http://USUARIO:PASS@HOST:PUERTO
+npm config set https-proxy http://USUARIO:PASS@HOST:PUERTO
+```
+
+3. Limpia y reinstala:
+
+```bash
+npm run rebuild:clean
+```
+
+4. Si aún falla, prueba instalación normal:
+
+```bash
+npm install
+npm run build
+```
+
+5. Verifica que exista el binario:
+
+```bash
+ls node_modules/.bin/vite
+```
+
+Si ese archivo no existe, la instalación quedó incompleta.

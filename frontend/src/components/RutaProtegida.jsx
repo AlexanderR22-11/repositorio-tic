@@ -1,28 +1,23 @@
 // src/components/RutaProtegida.jsx
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { getDefaultRouteForRole, getStoredUser, normalizeRole } from "../utils/auth";
 
 export default function RutaProtegida({ children, rolPermitido }) {
-  // Leer desde localStorage o sessionStorage
-  const stored = localStorage.getItem("usuario") || sessionStorage.getItem("usuario");
-  const usuario = stored ? JSON.parse(stored) : null;
-
-  console.log("RutaProtegida usuario:", usuario);
+  const usuario = getStoredUser();
 
   if (!usuario) {
-    console.log("RutaProtegida: no hay usuario, redirigiendo a /login");
     return <Navigate to="/login" replace />;
   }
 
-  // Soportar ambos nombres de campo y normalizar
-  const role = (usuario.role || usuario.rol || "").toString().toLowerCase();
-  const required = (rolPermitido || "").toString().toLowerCase();
+  const role = normalizeRole(usuario);
+  const permitidos = Array.isArray(rolPermitido)
+    ? rolPermitido.map((r) => r.toLowerCase())
+    : [(rolPermitido || "").toLowerCase()];
 
-  console.log("RutaProtegida role:", role, "required:", required);
-
-  if (required && role !== required) {
-    console.log("RutaProtegida: role no permitido, redirigiendo a /login");
-    return <Navigate to="/login" replace />;
+  if (permitidos[0] && !permitidos.includes(role)) {
+    // Redirige al dashboard correcto según rol real.
+    return <Navigate to={getDefaultRouteForRole(role)} replace />;
   }
 
   return children;
