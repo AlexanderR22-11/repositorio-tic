@@ -26,6 +26,18 @@ const sampleDocs = [
   { id: 8, subjectId: "red", title: "Topología y subneteo en laboratorio", author: "Ing. Ricardo M. Salas", date: "2026-03-12", thumbnail: "/assets/doc2.jpg", tags: ["Redes", "Subneteo"], url: "#", download: "#" },
 ];
 
+function toSubjectId(subject = "") {
+  const normalized = subject.toLowerCase();
+  if (normalized.includes("web")) return "dw";
+  if (normalized.includes("seguridad")) return "sda";
+  if (normalized.includes("base de datos")) return "bd";
+  if (normalized.includes("matem")) return "mat";
+  if (normalized.includes("orientada a objetos") || normalized.includes("poo")) return "poo";
+  if (normalized.includes("sistemas operativos")) return "so";
+  if (normalized.includes("redes")) return "red";
+  return "general";
+}
+
 export default function HomePage({ q = "" }) {
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
@@ -44,18 +56,21 @@ export default function HomePage({ q = "" }) {
       type: m.tipo || "Recurso",
     }));
 
-    const normalizedSamples = sampleDocs.map((m) => ({
-      id: m.id,
-      subjectId: toSubjectId(m.materia),
-      title: m.titulo,
-      author: m.autor,
-      date: m.fecha,
-      thumbnail: getImageForSubject(m.materia),
-      tags: m.tags,
-      fileName: null,
-      materia: m.materia,
-      type: m.tipo,
-    }));
+    const normalizedSamples = sampleDocs.map((m) => {
+      const subjectName = subjects.find((subject) => subject.id === m.subjectId)?.name || "General";
+      return {
+        id: m.id,
+        subjectId: m.subjectId,
+        title: m.title,
+        author: m.author,
+        date: m.date,
+        thumbnail: getImageForSubject(subjectName),
+        tags: m.tags || ["General"],
+        fileName: null,
+        materia: subjectName,
+        type: "Demo",
+      };
+    });
 
     return [...normalizedStored, ...normalizedSamples];
   }, []);
