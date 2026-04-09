@@ -9,7 +9,12 @@ export default function Navbar({ usuario, onLogout, q, setQ }) {
 
   const openDashboard = () => {
     if (!usuario) return navigate("/login");
-    const destino = usuario.rol === "maestro" ? "/dashboard/maestro" : "/dashboard/alumno";
+    const role = (usuario?.role || usuario?.rol || "").toLowerCase();
+
+    let destino = "/dashboard/alumno";
+    if (role === "maestro") destino = "/dashboard/maestro";
+    if (role === "admin" || role === "superadmin") destino = "/dashboard/admin";
+
     navigate(destino);
   };
 
