@@ -4,13 +4,13 @@ import DocumentCard from "../components/DocumentCard";
 import SubjectSidebar from "../components/SubjectSidebar";
 
 const subjects = [
-  { id: "dw", name: "Desarrollo Web Profesional", teacher: "Ing. Stephany A. López", group: "IDS-8A", filesCount: 4 },
-  { id: "sda", name: "Seguridad en el Desarrollo de Aplicaciones", teacher: "Mtro. Luis E. Castañeda", group: "IDS-8A", filesCount: 2 },
-  { id: "bd", name: "Administración de Base de Datos", teacher: "Mtra. Karina R. Ruiz", group: "IDS-8A", filesCount: 3 },
-  { id: "mat", name: "Matemáticas para Ingeniería II", teacher: "Mtro. Jorge M. Torres", group: "IDS-8A", filesCount: 2 },
-  { id: "poo", name: "Programación Orientada a Objetos", teacher: "Mtro. Héctor I. Beltrán", group: "IDS-8A", filesCount: 3 },
-  { id: "so", name: "Sistemas Operativos", teacher: "Mtra. Daniela V. Pérez", group: "IDS-8A", filesCount: 2 },
-  { id: "red", name: "Redes y Conectividad", teacher: "Ing. Ricardo M. Salas", group: "IDS-8A", filesCount: 2 },
+  { id: "dw", name: "Desarrollo Web Profesional", teacher: "Ing. STEPHANY ANAHÍ LÓPEZ LIZÁRRAGA", group: "IDS-81", filesCount: 4 },
+  { id: "sda", name: "Seguridad en el Desarrollo de Aplicaciones", teacher: "ING. OSCAR ARENAS GÓMEZ", group: "IDS-81", filesCount: 2 },
+  { id: "bd", name: "Administración de Base de Datos", teacher: "ING. JUAN MANUEL TOVAR SÁNCHEZ", group: "IDS-81", filesCount: 3 },
+  { id: "mat", name: "Matemáticas para Ingeniería II", teacher: "ING. 	MARCO FEDERICO ADAME OROPEZA", group: "IDS-81", filesCount: 2 },
+  { id: "poo", name: "Planeación y Organización del Trabajo", teacher: "LEONARDO DANIEL GUERRA ISIORDIA", group: "IDS-81", filesCount: 3 },
+  { id: "so", name: "Inglés VII", teacher: "Mtro. 	JUAN MANUEL RAMIREZ", group: "IDS-81", filesCount: 2 },
+
 ];
 
 const sampleDocs = [
@@ -21,7 +21,7 @@ const sampleDocs = [
   { id: 5, subjectId: "mat", title: "Ejercicios de Cálculo Diferencial", author: "Mtro. Jorge M. Torres", date: "2026-02-28", thumbnail: "/assets/doc1.jpg", tags: ["Cálculo", "Álgebra"], url: "#", download: "#" },
   { id: 6, subjectId: "poo", title: "Patrones de diseño para proyectos", author: "Mtro. Héctor I. Beltrán", date: "2026-03-08", thumbnail: "/assets/doc3.jpg", tags: ["POO", "Patrones"], url: "#", download: "#" },
   { id: 7, subjectId: "so", title: "Práctica de procesos en Linux", author: "Mtra. Daniela V. Pérez", date: "2026-03-10", thumbnail: "/assets/doc1.jpg", tags: ["Linux", "Procesos"], url: "#", download: "#" },
-  { id: 8, subjectId: "red", title: "Topología y subneteo en laboratorio", author: "Ing. Ricardo M. Salas", date: "2026-03-12", thumbnail: "/assets/doc2.jpg", tags: ["Redes", "Subneteo"], url: "#", download: "#" },
+  { id: 8, subjectId: "red", title: "jais puta pendeja ./.", author: "Ing. peso pluma", date: "2026-03-12", thumbnail: "/assets/doc2.jpg", tags: ["Redes", "Subneteo"], url: "#", download: "#" },
 ];
 
 export default function HomePage({ q = "" }) {
