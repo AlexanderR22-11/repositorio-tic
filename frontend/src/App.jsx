@@ -18,10 +18,7 @@ function AppRoutes() {
   const usuario = useMemo(() => getStoredUser(), [location.pathname]);
 
   const hideNavbarOn = ["/login", "/register", "/forgot-password"];
-  const dashboardWithoutChrome = ["/dashboard/maestro", "/dashboard/admin"];
-  const shouldHideChrome =
-    hideNavbarOn.includes(location.pathname) ||
-    dashboardWithoutChrome.some((path) => location.pathname.startsWith(path));
+  const shouldHideChrome = hideNavbarOn.includes(location.pathname);
   const [q, setQ] = useState("");
 
   const logout = () => {
