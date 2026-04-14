@@ -1,6 +1,10 @@
 import React, { useRef, useState } from "react";
 
-export default function DocumentUpload({ apiBase = "http://localhost:3000/api", onUploaded = () => {} }) {
+export default function DocumentUpload({
+  apiBase = "http://localhost:3000/api",
+  onUploaded = () => {},
+  defaultCategoryId = null, // opcional: categoría por defecto
+}) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [author, setAuthor] = useState("");
@@ -9,6 +13,7 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const fileInputRef = useRef();
 
   const token = localStorage.getItem("token");
@@ -20,6 +25,8 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
     setPublishedAt("");
     setFile(null);
     setProgress(0);
+    setError(null);
+    setSuccess(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -41,22 +48,28 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     if (!validate()) return;
 
     setUploading(true);
     setProgress(0);
 
     const formData = new FormData();
+    // Campos que espera el backend (español)
     formData.append("file", file);
-    formData.append("title", title || file.name);
-    formData.append("description", description);
-    formData.append("author", author);
+    formData.append("titulo", title || file.name);
+    formData.append("descripcion", description || "");
+    formData.append("autor", author || "");
     if (publishedAt) formData.append("fecha_publicacion", publishedAt);
+    if (defaultCategoryId) formData.append("category_id", defaultCategoryId);
+    // opcional: si quieres que el frontend decida status, puedes enviar status
+    // formData.append("status", "publicado");
 
     try {
-      await new Promise((resolve, reject) => {
+      const result = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${apiBase}/documents`, true);
+
         if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
         xhr.upload.onprogress = (evt) => {
@@ -67,28 +80,39 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
         };
 
         xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(JSON.parse(xhr.responseText || "{}"));
+          const status = xhr.status;
+          const text = xhr.responseText || "";
+          if (status >= 200 && status < 300) {
+            try {
+              const json = text ? JSON.parse(text) : {};
+              resolve(json);
+            } catch (parseErr) {
+              // Respuesta no JSON pero OK
+              resolve({ raw: text });
+            }
             return;
           }
 
-          let msg = `Error ${xhr.status}`;
+          // Error: intentar parsear mensaje del servidor
           try {
-            const body = JSON.parse(xhr.responseText);
-            msg = body.message || JSON.stringify(body);
+            const body = text ? JSON.parse(text) : {};
+            const msg = body.message || JSON.stringify(body);
+            reject(new Error(msg));
           } catch {
-            msg = xhr.responseText || msg;
+            reject(new Error(text || `Error ${status}`));
           }
-          reject(new Error(msg));
         };
 
         xhr.onerror = () => reject(new Error("Error de red al subir el archivo."));
         xhr.send(formData);
       });
 
-      resetForm();
+      // Éxito
+      setSuccess("Archivo subido correctamente.");
       setProgress(100);
-      onUploaded();
+      resetForm();
+      // Llamar callback con la respuesta del servidor
+      onUploaded(result);
     } catch (err) {
       setError(err.message || "Error al subir documento.");
       setProgress(0);
@@ -158,6 +182,7 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
         </label>
 
         {error ? <div className="alert alert-error py-2 text-sm">{error}</div> : null}
+        {success ? <div className="alert alert-success py-2 text-sm">{success}</div> : null}
 
         {uploading ? (
           <progress className="progress progress-primary w-full" value={progress} max="100" />
@@ -168,7 +193,6 @@ export default function DocumentUpload({ apiBase = "http://localhost:3000/api", 
             type="button"
             onClick={() => {
               resetForm();
-              setError(null);
             }}
             className="btn btn-ghost"
             disabled={uploading}

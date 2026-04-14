@@ -117,3 +117,62 @@ ls node_modules/.bin/vite
 ```
 
 Si ese archivo no existe, la instalación quedó incompleta.
+# Repositorio TIC - Backend
+
+**Proyecto**: Plataforma de gestión de documentos y administración educativa  
+**Autor**: Fabián  
+**Estado**: Entrega para evaluación académica
+
+---
+
+## Descripción
+
+Aplicación backend para gestión de documentos con control por roles, autenticación, respaldo y generación de reportes. Permite a **admin**, **maestro** y **alumno** interactuar con recursos protegidos, subir y descargar archivos, generar backups y exportar reportes en PDF y CSV.
+
+---
+
+## Características principales
+
+- **Autenticación por JWT** y control de acceso por roles.  
+- **Hashing de contraseñas** con bcrypt.  
+- **Subida y descarga de archivos** con control de permisos.  
+- **Backups y restauración** de datos protegidos por roles.  
+- **Exportación** a CSV y JSON.  
+- **Generación de reportes PDF** desde la base de datos.  
+- **Logs básicos** en consola para auditoría y debugging.
+
+---
+
+## Stack tecnológico
+
+| Icono | Tecnología | Uso |
+|---|---|---|
+| 🟩 | **Node.js** | Servidor backend |
+| 📦 | **Express** | Enrutamiento y middleware |
+| 🔐 | **bcrypt** | Hash de contraseñas |
+| 🧾 | **jsonwebtoken** | Tokens JWT |
+| 🗄️ | **MySQL** | Base de datos |
+| 📁 | **multer** | Subida de archivos |
+| 📄 | **pdfkit / puppeteer** | Generación de PDF |
+| ⚙️ | **dotenv** | Variables de entorno |
+| 🧪 | **curl / PowerShell** | Pruebas y comprobaciones |
+
+---
+
+## Instalación y configuración
+
+**Requisitos previos**  
+- Node.js instalado  
+- MySQL en ejecución
+
+**Instalación**
+```bash
+# clonar repositorio (ajusta la URL)
+git clone <REPO_URL>
+cd backend
+
+# instalar dependencias
+npm install
+
+# crear carpeta de uploads si no existe
+mkdir uploads

@@ -83,6 +83,6 @@ export const listDocumentsPublic = async (req, res) => {
     return res.json({ ok: true, page, limit, total, documents });
   } catch (err) {
     console.error("[listDocumentsPublic] error:", err);
-    return res.status(500).json({ ok: false, message: "Error al listar documentos", error: err.message });
+    return res.status(500).json({ ok: false, message: "Error al listar documents", error: err.message });
   }
 };

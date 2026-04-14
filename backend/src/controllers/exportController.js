@@ -114,7 +114,7 @@ export const generarReportePDF = async (req, res) => {
     doc.moveDown();
 
     if (!rows || rows.length === 0) {
-      doc.fontSize(12).text("No se encontraron documentos.", { align: "left" });
+      doc.fontSize(12).text("No se encontraron documents.", { align: "left" });
     } else {
       rows.forEach((r, idx) => {
         doc.fontSize(12).text(`${idx + 1}. ${r.titulo}`);

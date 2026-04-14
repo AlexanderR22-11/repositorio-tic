@@ -7,7 +7,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || path.resolve(process.cwd(), "upload
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 /**
- * Subir documento y crear registro en tabla 'documentos'
+ * Subir documento y crear registro en tabla 'documents'
  * Espera FormData con: file, titulo (opcional), descripcion (opcional), category_id (opcional)
  * Requiere middleware de autenticación que ponga req.user
  */
@@ -27,7 +27,7 @@ export const uploadDocument = async (req, res) => {
     // Construir archivo_url relativo (puedes cambiar a solo filename si prefieres)
     const archivo_url = `/uploads/${filename}`;
 
-    const sql = `INSERT INTO documentos
+    const sql = `INSERT INTO documents
       (titulo, descripcion, archivo_url, thumbnail, fecha_publicacion, created_by, status, created_at, updated_at, category_id, file_name, mime_type, size)
       VALUES (?, ?, ?, NULL, NOW(), ?, 'borrador', NOW(), NOW(), ?, ?, ?, ?)`;
 
@@ -43,7 +43,7 @@ export const uploadDocument = async (req, res) => {
     ]);
 
     const [rows] = await pool.query(
-      "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos WHERE id = ?",
+      "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documents WHERE id = ?",
       [result.insertId]
     );
 
@@ -64,7 +64,7 @@ export const uploadDocument = async (req, res) => {
 };
 
 /**
- * Listar documentos (opcional filter por category_id)
+ * Listar documents (opcional filter por category_id)
  * GET /api/documents?category_id=123
  */
 export const listDocuments = async (req, res) => {
@@ -73,18 +73,18 @@ export const listDocuments = async (req, res) => {
     let rows;
     if (category_id) {
       [rows] = await pool.query(
-        "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos WHERE category_id = ? ORDER BY id DESC",
+        "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documents WHERE category_id = ? ORDER BY id DESC",
         [Number(category_id)]
       );
     } else {
       [rows] = await pool.query(
-        "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos ORDER BY id DESC"
+        "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documents ORDER BY id DESC"
       );
     }
     return res.json({ ok: true, documents: rows });
   } catch (err) {
     console.error("[listDocuments] error:", err.stack || err);
-    return res.status(500).json({ ok: false, message: "Error al listar documentos", error: err.message });
+    return res.status(500).json({ ok: false, message: "Error al listar documents", error: err.message });
   }
 };
 
@@ -96,7 +96,7 @@ export const getDocument = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.query(
-      "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos WHERE id = ?",
+      "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documents WHERE id = ?",
       [id]
     );
     if (!rows.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
@@ -114,7 +114,7 @@ export const getDocument = async (req, res) => {
 export const downloadDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query("SELECT file_name, archivo_url, mime_type FROM documentos WHERE id = ?", [id]);
+    const [rows] = await pool.query("SELECT file_name, archivo_url, mime_type FROM documents WHERE id = ?", [id]);
     if (!rows.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
     const doc = rows[0];
@@ -145,7 +145,7 @@ export const updateDocument = async (req, res) => {
   try {
     const { id } = req.params;
     // comprobar existencia
-    const [existing] = await pool.query("SELECT archivo_url, file_name FROM documentos WHERE id = ?", [id]);
+    const [existing] = await pool.query("SELECT archivo_url, file_name FROM documents WHERE id = ?", [id]);
     if (!existing.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
     const prev = existing[0];
@@ -212,10 +212,10 @@ export const updateDocument = async (req, res) => {
     }
 
     params.push(id);
-    const sql = `UPDATE documentos SET ${updates.join(", ")}, updated_at = NOW() WHERE id = ?`;
+    const sql = `UPDATE documents SET ${updates.join(", ")}, updated_at = NOW() WHERE id = ?`;
     await pool.query(sql, params);
 
-    const [rows] = await pool.query("SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at, updated_at FROM documentos WHERE id = ?", [id]);
+    const [rows] = await pool.query("SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at, updated_at FROM documents WHERE id = ?", [id]);
     return res.json({ ok: true, document: rows[0] });
   } catch (err) {
     console.error("[updateDocument] error:", err.stack || err);
@@ -239,13 +239,13 @@ export const updateDocument = async (req, res) => {
 export const deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query("SELECT archivo_url FROM documentos WHERE id = ?", [id]);
+    const [rows] = await pool.query("SELECT archivo_url FROM documents WHERE id = ?", [id]);
     if (!rows.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
     const archivoUrl = rows[0].archivo_url;
     const filename = archivoUrl ? (archivoUrl.startsWith("/uploads/") ? archivoUrl.replace("/uploads/", "") : path.basename(archivoUrl)) : null;
 
-    const [result] = await pool.query("DELETE FROM documentos WHERE id = ?", [id]);
+    const [result] = await pool.query("DELETE FROM documents WHERE id = ?", [id]);
     if (result.affectedRows === 0) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
     if (filename) {

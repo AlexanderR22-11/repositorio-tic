@@ -62,7 +62,7 @@ const allowRoles = (...roles) => (req, res, next) => {
 
 // Rutas
 
-// Listar documentos (autenticado)
+// Listar documents (autenticado)
 router.get("/", requireAuth, listDocuments);
 
 // Subir documento: ahora cualquier usuario autenticado puede subir
