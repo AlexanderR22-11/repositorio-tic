@@ -1,112 +1,173 @@
-import React, { useMemo, useState } from "react";
+// frontend/src/pages/HomePage.jsx
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { FaCalendarAlt, FaClock, FaFolderOpen } from "react-icons/fa";
 import { motion } from "framer-motion";
 import DocumentCard from "../components/DocumentCard";
 import SubjectSidebar from "../components/SubjectSidebar";
 import { getImageForSubject } from "../utils/subjectImages";
 
-const subjects = [
+// Datos de ejemplo como fallback
+const sampleSubjects = [
   { id: "dw", name: "Desarrollo Web Profesional", teacher: "ING. STEPHANY ANAHÍ LÓPEZ LIZÁRRAGA", group: "IDS-81", filesCount: 4 },
   { id: "sda", name: "Seguridad en el Desarrollo de Aplicaciones", teacher: "ING. OSCAR ARENAS GÓMEZ", group: "IDS-81", filesCount: 2 },
   { id: "bd", name: "Administración de Base de Datos", teacher: "ING. JUAN MANUEL TOVAR SÁNCHEZ", group: "IDS-81", filesCount: 3 },
   { id: "mat", name: "Matemáticas para Ingeniería II", teacher: "ING. MARCO FEDERICO ADAME OROPEZA", group: "IDS-81", filesCount: 2 },
-  { id: "poo", name: "INGLES VII", teacher: "Mtro. 	JUAN MANUEL RAMIREZ", group: "IDS-81", filesCount: 3 },
+  { id: "poo", name: "INGLES VII", teacher: "Mtro. JUAN MANUEL RAMIREZ", group: "IDS-81", filesCount: 3 },
   { id: "so", name: "Planeación y Organización del Trabajo", teacher: "Mto. LEONARDO DANIEL GUERRA ISIORDIA", group: "IDS-81", filesCount: 2 },
 ];
 
 const sampleDocs = [
-  { id: 1, subjectId: "dw", title: "Guía de Programación Avanzada", author: "Ing. Stephany A. López", date: "2026-03-02", thumbnail: "/assets/doc1.jpg", tags: ["Programación", "Algoritmos"], url: "#", download: "#" },
-  { id: 2, subjectId: "dw", title: "Arquitectura de Software Moderna", author: "Ing. Stephany A. López", date: "2026-02-25", thumbnail: "/assets/doc2.jpg", tags: ["Arquitectura", "Microservicios"], url: "#", download: "#" },
-  { id: 3, subjectId: "bd", title: "Bases de Datos NoSQL", author: "Mtra. Karina R. Ruiz", date: "2026-02-19", thumbnail: "/assets/doc3.jpg", tags: ["Bases de datos"], url: "#", download: "#" },
-  { id: 4, subjectId: "sda", title: "Checklist OWASP para proyectos escolares", author: "Mtro. Luis E. Castañeda", date: "2026-03-06", thumbnail: "/assets/doc2.jpg", tags: ["Seguridad", "OWASP"], url: "#", download: "#" },
-  { id: 5, subjectId: "mat", title: "Ejercicios de Cálculo Diferencial", author: "Mtro. Jorge M. Torres", date: "2026-02-28", thumbnail: "/assets/doc1.jpg", tags: ["Cálculo", "Álgebra"], url: "#", download: "#" },
-  { id: 6, subjectId: "poo", title: "Patrones de diseño para proyectos", author: "Mtro. Héctor I. Beltrán", date: "2026-03-08", thumbnail: "/assets/doc3.jpg", tags: ["POO", "Patrones"], url: "#", download: "#" },
-  { id: 7, subjectId: "so", title: "Práctica de procesos en Linux", author: "Mtra. Daniela V. Pérez", date: "2026-03-10", thumbnail: "/assets/doc1.jpg", tags: ["Linux", "Procesos"], url: "#", download: "#" },
-  { id: 8, subjectId: "red", title: "Topología y subneteo en laboratorio", author: "Ing. Ricardo M. Salas", date: "2026-03-12", thumbnail: "/assets/doc2.jpg", tags: ["Redes", "Subneteo"], url: "#", download: "#" },
+  { id: 1, subjectId: "dw", title: "Guía de Programación Avanzada", author: "Ing. Stephany A. López", date: "2026-03-02", thumbnail: "/assets/doc1.jpg", tags: ["Programación", "Algoritmos"], archivo_url: "#" },
+  { id: 2, subjectId: "dw", title: "Arquitectura de Software Moderna", author: "Ing. Stephany A. López", date: "2026-02-25", thumbnail: "/assets/doc2.jpg", tags: ["Arquitectura", "Microservicios"], archivo_url: "#" },
+  { id: 3, subjectId: "bd", title: "Bases de Datos NoSQL", author: "Mtra. Karina R. Ruiz", date: "2026-02-19", thumbnail: "/assets/doc3.jpg", tags: ["Bases de datos"], archivo_url: "#" },
+  { id: 4, subjectId: "sda", title: "Checklist OWASP para proyectos escolares", author: "Mtro. Luis E. Castañeda", date: "2026-03-06", thumbnail: "/assets/doc2.jpg", tags: ["Seguridad", "OWASP"], archivo_url: "#" },
+  { id: 5, subjectId: "mat", title: "Ejercicios de Cálculo Diferencial", author: "Mtro. Jorge M. Torres", date: "2026-02-28", thumbnail: "/assets/doc1.jpg", tags: ["Cálculo", "Álgebra"], archivo_url: "#" },
+  { id: 6, subjectId: "poo", title: "Patrones de diseño para proyectos", author: "Mtro. Héctor I. Beltrán", date: "2026-03-08", thumbnail: "/assets/doc3.jpg", tags: ["POO", "Patrones"], archivo_url: "#" },
+  { id: 7, subjectId: "so", title: "Práctica de procesos en Linux", author: "Mtra. Daniela V. Pérez", date: "2026-03-10", thumbnail: "/assets/doc1.jpg", tags: ["Linux", "Procesos"], archivo_url: "#" },
+  { id: 8, subjectId: "red", title: "Topología y subneteo en laboratorio", author: "Ing. Ricardo M. Salas", date: "2026-03-12", thumbnail: "/assets/doc2.jpg", tags: ["Redes", "Subneteo"], archivo_url: "#" },
 ];
 
-function toSubjectId(subject = "") {
-  const normalized = subject.toLowerCase();
-  if (normalized.includes("web")) return "dw";
-  if (normalized.includes("seguridad")) return "sda";
-  if (normalized.includes("base de datos")) return "bd";
-  if (normalized.includes("matem")) return "mat";
-  if (normalized.includes("orientada a objetos") || normalized.includes("poo")) return "poo";
-  if (normalized.includes("sistemas operativos")) return "so";
-  if (normalized.includes("redes")) return "red";
-  return "general";
+function useDebounced(value, delay = 350) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
 }
 
-export default function HomePage({ q = "" }) {
+export default function HomePage({ q = "", token = null }) {
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(true);
+  const [subjectsError, setSubjectsError] = useState(null);
+
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
-  const docs = useMemo(() => {
-    const stored = JSON.parse(localStorage.getItem("materiales") || "[]");
-    const normalizedStored = stored.map((m) => ({
-      id: m.id,
-      subjectId: toSubjectId(m.materia),
-      title: m.titulo,
-      author: m.ownerEmail || m.autor || "Docente UTN",
-      date: m.fecha || new Date().toISOString(),
-      thumbnail: getImageForSubject(m.materia),
-      tags: [m.tipo || "Material", m.materia || "General"],
-      fileName: m.nombreArchivo,
-      materia: m.materia,
-      type: m.tipo || "Recurso",
-    }));
+  const [docs, setDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docsError, setDocsError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(12);
+  const [total, setTotal] = useState(0);
 
-    const normalizedSamples = sampleDocs.map((m) => {
-      const subjectName = subjects.find((subject) => subject.id === m.subjectId)?.name || "General";
-      return {
-        id: m.id,
-        subjectId: m.subjectId,
-        title: m.title,
-        author: m.author,
-        date: m.date,
-        thumbnail: getImageForSubject(subjectName),
-        tags: m.tags || ["General"],
-        fileName: null,
-        materia: subjectName,
-        type: "Demo",
-      };
-    });
+  const [query, setQuery] = useState(q || "");
+  const debouncedQuery = useDebounced(query, 400);
 
-    return [...normalizedStored, ...normalizedSamples];
+  // Cargar categorías reales
+  useEffect(() => {
+    let mounted = true;
+    setSubjectsLoading(true);
+    setSubjectsError(null);
+
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!mounted) return;
+        if (data && data.ok && Array.isArray(data.categories)) {
+          // mapear a la estructura que espera SubjectSidebar
+          const mapped = data.categories.map((c) => ({ id: String(c.id), name: c.name, slug: c.slug, filesCount: c.count || 0 }));
+          setSubjects(mapped);
+        } else {
+          // fallback a sampleSubjects
+          setSubjects(sampleSubjects);
+        }
+      })
+      .catch((err) => {
+        console.error("Error cargando categorías:", err);
+        setSubjects(sampleSubjects);
+        setSubjectsError("No se pudieron cargar las materias");
+      })
+      .finally(() => mounted && setSubjectsLoading(false));
+
+    return () => { mounted = false; };
   }, []);
 
-  const subjectsWithCount = useMemo(() => {
-    return subjects.map((subject) => ({
-      ...subject,
-      filesCount: docs.filter((doc) => doc.subjectId === subject.id).length,
-    }));
-  }, [docs]);
+  // Cargar documentos por categoría, página y búsqueda
+  const fetchDocuments = useCallback(() => {
+    setDocsLoading(true);
+    setDocsError(null);
 
-  const subjectById = useMemo(
-    () => Object.fromEntries(subjectsWithCount.map((subject) => [subject.id, subject])),
-    [subjectsWithCount]
-  );
+    const params = new URLSearchParams();
+    if (selectedSubjectId) params.append("category_id", selectedSubjectId);
+    if (debouncedQuery) params.append("q", debouncedQuery);
+    params.append("page", String(page));
+    params.append("limit", String(limit));
+
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    fetch(`/api/documents?${params.toString()}`, { headers })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && data.ok) {
+          setDocs(data.documents || []);
+          setTotal(Number(data.total || (data.documents ? data.documents.length : 0)));
+        } else {
+          // fallback a sampleDocs filtered por subject
+          const fallback = sampleDocs.filter((d) => !selectedSubjectId || d.subjectId === selectedSubjectId);
+          setDocs(fallback);
+          setTotal(fallback.length);
+          setDocsError(data?.error || "No se pudieron obtener documentos");
+        }
+      })
+      .catch((err) => {
+        console.error("Error cargando documentos:", err);
+        const fallback = sampleDocs.filter((d) => !selectedSubjectId || d.subjectId === selectedSubjectId);
+        setDocs(fallback);
+        setTotal(fallback.length);
+        setDocsError("Error de red al obtener documentos");
+      })
+      .finally(() => setDocsLoading(false));
+  }, [selectedSubjectId, debouncedQuery, page, limit, token]);
+
+  useEffect(() => {
+    // resetear página al cambiar categoría o búsqueda
+    setPage(1);
+  }, [selectedSubjectId, debouncedQuery]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments, page]);
+
+  // Derived values
+  const subjectsWithCount = useMemo(() => {
+    // si tenemos counts desde API, usarlos; si no, calcular desde docs + sample
+    if (subjects && subjects.length && subjects[0].filesCount !== undefined) return subjects;
+    return subjects.map((s) => ({ ...s, filesCount: docs.filter((d) => d.subjectId === s.id).length }));
+  }, [subjects, docs]);
+
+  const subjectById = useMemo(() => Object.fromEntries(subjectsWithCount.map((s) => [s.id, s])), [subjectsWithCount]);
 
   const recentMatches = useMemo(() => {
     return [...docs]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at))
       .slice(0, 4);
   }, [docs]);
 
-  const query = (q || "").toLowerCase();
+  const visibleDocs = useMemo(() => docs.slice(0, 8), [docs]);
 
-  const filtered = useMemo(() => {
-    return docs.filter((doc) => {
-      const sameSubject = !selectedSubjectId || doc.subjectId === selectedSubjectId;
-      const matchesQuery =
-        doc.title.toLowerCase().includes(query) ||
-        doc.author.toLowerCase().includes(query) ||
-        doc.tags.some((tag) => tag.toLowerCase().includes(query));
+  // Acciones
+  const handleSelectSubject = (id) => {
+    setSelectedSubjectId(id);
+    setPage(1);
+  };
 
-      return sameSubject && matchesQuery;
-    });
-  }, [docs, query, selectedSubjectId]);
+  const handleView = (doc) => {
+    if (doc.archivo_url) window.open(doc.archivo_url, "_blank", "noopener");
+    else alert("Archivo no disponible");
+  };
 
-  const visibleDocs = filtered.slice(0, 8);
+  const handleDownload = (doc) => {
+    // si tu backend expone /api/documents/:id/download, usarlo; si archivo público, usar archivo_url
+    if (doc.id) {
+      const url = `/api/documents/${doc.id}/download`;
+      window.open(url, "_blank", "noopener");
+    } else if (doc.archivo_url) {
+      window.open(doc.archivo_url, "_blank", "noopener");
+    } else {
+      alert("Archivo no disponible para descargar");
+    }
+  };
 
   return (
     <main className="min-h-screen bg-base-200" id="inicio">
@@ -122,6 +183,16 @@ export default function HomePage({ q = "" }) {
             <h1 className="text-3xl md:text-4xl font-extrabold text-[#006847]">Repositorio UTN</h1>
             <p className="text-sm text-base-content/70">Ingeniería en Desarrollo y Gestión de Software</p>
           </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por título, autor o etiqueta"
+              className="input input-sm input-bordered"
+              aria-label="Buscar materiales"
+            />
+          </div>
         </div>
       </motion.header>
 
@@ -135,7 +206,8 @@ export default function HomePage({ q = "" }) {
         <SubjectSidebar
           subjects={subjectsWithCount}
           selectedSubjectId={selectedSubjectId}
-          onSelect={setSelectedSubjectId}
+          onSelect={handleSelectSubject}
+          loading={subjectsLoading}
         />
 
         <div className="md:col-span-3">
@@ -168,7 +240,7 @@ export default function HomePage({ q = "" }) {
                       <p className="font-semibold text-sm">{doc.title}</p>
                       <p className="text-xs mt-1">{subjectById[doc.subjectId]?.name || doc.materia}</p>
                       <p className="text-xs mt-1 flex items-center gap-3">
-                        <span className="inline-flex items-center gap-1"><FaCalendarAlt /> {new Date(doc.date).toLocaleDateString()}</span>
+                        <span className="inline-flex items-center gap-1"><FaCalendarAlt /> {new Date(doc.date || doc.created_at).toLocaleDateString()}</span>
                         <span className="inline-flex items-center gap-1"><FaClock /> Reciente</span>
                       </p>
                     </motion.div>
@@ -188,15 +260,41 @@ export default function HomePage({ q = "" }) {
             <span className="text-xs text-base-content/70">Mostrando máximo 8 archivos</span>
           </motion.div>
 
-          {visibleDocs.length === 0 ? (
+          {docsLoading ? (
+            <div className="p-6 text-center">Cargando materiales...</div>
+          ) : docsError ? (
+            <div className="bg-base-100 rounded-2xl border border-dashed border-base-300 p-8 text-center text-base-content/70">
+              {docsError}
+            </div>
+          ) : visibleDocs.length === 0 ? (
             <div className="bg-base-100 rounded-2xl border border-dashed border-base-300 p-8 text-center text-base-content/70">
               No hay archivos para esta materia con ese filtro.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              {visibleDocs.map((doc) => <DocumentCard key={doc.id} doc={doc} />)}
+              {visibleDocs.map((doc) => (
+                <DocumentCard
+                  key={doc.id}
+                  doc={{
+                    ...doc,
+                    thumbnail: doc.thumbnail || getImageForSubject(subjectById[doc.subjectId]?.name || doc.materia),
+                    onView: () => handleView(doc),
+                    onDownload: () => handleDownload(doc),
+                  }}
+                />
+              ))}
             </div>
           )}
+
+          {/* Paginación simple */}
+          <div className="mt-6 flex items-center justify-between">
+            <div className="text-sm text-base-content/70">Total {total} materiales</div>
+            <div className="flex items-center gap-2">
+              <button className="btn btn-sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Anterior</button>
+              <span className="text-sm">{page} / {Math.max(1, Math.ceil(total / limit))}</span>
+              <button className="btn btn-sm" disabled={page * limit >= total} onClick={() => setPage((p) => p + 1)}>Siguiente</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>

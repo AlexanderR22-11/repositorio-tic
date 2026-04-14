@@ -28,18 +28,29 @@ export default function Login() {
     err: (m) => toast.error(m),
   };
 
+  /**
+   * Guarda autenticación:
+   * - si remember === true guarda en localStorage (persistente)
+   * - si remember === false guarda en sessionStorage (solo pestaña)
+   * - no sobrescribe con token vacío en producción
+   */
   const saveAuth = (user, token) => {
-    const safeToken = token || "mock-token";
+    const safeToken = token || (import.meta.env.DEV ? "mock-token" : "");
+    if (!safeToken && !import.meta.env.DEV) {
+      // No guardar token vacío en producción
+      console.warn("No se proporcionó token válido para guardar.");
+    }
+
     if (remember) {
+      if (safeToken) localStorage.setItem("token", safeToken);
       localStorage.setItem("usuario", JSON.stringify(user));
-      localStorage.setItem("token", safeToken);
       sessionStorage.removeItem("usuario");
       sessionStorage.removeItem("token");
       return;
     }
 
+    if (safeToken) sessionStorage.setItem("token", safeToken);
     sessionStorage.setItem("usuario", JSON.stringify(user));
-    sessionStorage.setItem("token", safeToken);
     localStorage.removeItem("usuario");
     localStorage.removeItem("token");
   };
@@ -63,7 +74,8 @@ export default function Login() {
       materias: mockUser.materias,
     };
 
-    saveAuth(safeUser, "mock-token");
+    // Solo usar mock-token en desarrollo
+    saveAuth(safeUser, import.meta.env.DEV ? "mock-token" : "");
     notify.ok(`Bienvenido ${safeUser.nombre}`);
     redirectByRole(safeUser);
     return true;
@@ -79,7 +91,7 @@ export default function Login() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/auth/login", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE || ""}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo: correo.trim(), password }),
@@ -88,7 +100,7 @@ export default function Login() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || !data.user || !data.token) {
-        // Si el backend falla o no devuelve role utilizable, usar fallback local.
+        // Si el backend falla o no devuelve token, usar fallback local.
         const ok = mockLoginFallback();
         if (!ok) notify.err(data.error || "Error en autenticación");
         return;
@@ -115,7 +127,7 @@ export default function Login() {
       }
 
       setLoading(true);
-      const res = await fetch("http://localhost:3000/api/auth/google", {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE || ""}/api/auth/google`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credential: credentialResponse.credential }),

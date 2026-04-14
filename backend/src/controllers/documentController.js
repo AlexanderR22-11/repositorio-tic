@@ -1,164 +1,261 @@
 // backend/src/controllers/documentController.js
-import fs from "fs";
-import path from "path";
 import { pool } from "../config/db.js";
+import path from "path";
+import fs from "fs";
 
-const UPLOAD_DIR = path.resolve(process.cwd(), "uploads");
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.resolve(process.cwd(), "uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
-// LIST
-export const listDocuments = async (req, res) => {
+/**
+ * Subir documento y crear registro en tabla 'documentos'
+ * Espera FormData con: file, titulo (opcional), descripcion (opcional), category_id (opcional)
+ * Requiere middleware de autenticación que ponga req.user
+ */
+export const uploadDocument = async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT * FROM documentos ORDER BY created_at DESC LIMIT 100");
-    return res.json(rows);
+    const user = req.user;
+    if (!user || !user.id) return res.status(401).json({ ok: false, message: "No autenticado" });
+
+    if (!req.file) return res.status(400).json({ ok: false, message: "No se recibió archivo" });
+
+    const { originalname, filename, mimetype, size } = req.file;
+    const titulo = (req.body.titulo || originalname || "").trim();
+    const descripcion = req.body.descripcion ? String(req.body.descripcion).trim() : null;
+    const category_id = req.body.category_id ? Number(req.body.category_id) : null;
+    const created_by = Number(user.id);
+
+    // Construir archivo_url relativo (puedes cambiar a solo filename si prefieres)
+    const archivo_url = `/uploads/${filename}`;
+
+    const sql = `INSERT INTO documentos
+      (titulo, descripcion, archivo_url, thumbnail, fecha_publicacion, created_by, status, created_at, updated_at, category_id, file_name, mime_type, size)
+      VALUES (?, ?, ?, NULL, NOW(), ?, 'borrador', NOW(), NOW(), ?, ?, ?, ?)`;
+
+    const [result] = await pool.query(sql, [
+      titulo,
+      descripcion,
+      archivo_url,
+      created_by,
+      category_id,
+      originalname,
+      mimetype,
+      size
+    ]);
+
+    const [rows] = await pool.query(
+      "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos WHERE id = ?",
+      [result.insertId]
+    );
+
+    return res.status(201).json({ ok: true, document: rows[0] });
   } catch (err) {
-    console.error("[listDocuments] error:", err.stack || err);
-    return res.status(500).json({ message: "Error al listar documentos", error: err.message });
+    console.error("[uploadDocument] error:", err.stack || err);
+    // cleanup si multer guardó archivo
+    try {
+      if (req?.file?.filename) {
+        const fp = path.join(UPLOAD_DIR, req.file.filename);
+        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      }
+    } catch (e) {
+      console.error("[uploadDocument] cleanup error:", e.stack || e);
+    }
+    return res.status(500).json({ ok: false, message: "Error al subir documento", error: err.message });
   }
 };
 
-// GET single
+/**
+ * Listar documentos (opcional filter por category_id)
+ * GET /api/documents?category_id=123
+ */
+export const listDocuments = async (req, res) => {
+  try {
+    const { category_id } = req.query;
+    let rows;
+    if (category_id) {
+      [rows] = await pool.query(
+        "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos WHERE category_id = ? ORDER BY id DESC",
+        [Number(category_id)]
+      );
+    } else {
+      [rows] = await pool.query(
+        "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos ORDER BY id DESC"
+      );
+    }
+    return res.json({ ok: true, documents: rows });
+  } catch (err) {
+    console.error("[listDocuments] error:", err.stack || err);
+    return res.status(500).json({ ok: false, message: "Error al listar documentos", error: err.message });
+  }
+};
+
+/**
+ * Obtener metadatos de un documento por id
+ * GET /api/documents/:id
+ */
 export const getDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query("SELECT * FROM documentos WHERE id = ?", [id]);
-    if (!rows.length) return res.status(404).json({ message: "Documento no encontrado" });
-    return res.json(rows[0]);
+    const [rows] = await pool.query(
+      "SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at FROM documentos WHERE id = ?",
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
+    return res.json({ ok: true, document: rows[0] });
   } catch (err) {
     console.error("[getDocument] error:", err.stack || err);
-    return res.status(500).json({ message: "Error al obtener documento", error: err.message });
+    return res.status(500).json({ ok: false, message: "Error al obtener documento", error: err.message });
   }
 };
 
-export const uploadDocument = async (req, res) => {
-  try {
-    console.log("[uploadDocument] START");
-    console.log("[uploadDocument] pool defined:", !!pool);
-    console.log("[uploadDocument] req.file:", req.file ? { filename: req.file.filename, originalname: req.file.originalname, size: req.file.size } : null);
-    console.log("[uploadDocument] req.body:", req.body);
-    const file = req.file;
-    const { titulo, autor, fecha_publicacion } = req.body;
-    const created_by = req.user ? req.user.id : (req.body.created_by ? Number(req.body.created_by) : null);
-
-    if (!file && !titulo) return res.status(400).json({ message: "Se requiere archivo o título" });
-
-    const archivo_url = file ? `/uploads/${file.filename}` : null;
-    const tituloFinal = titulo || (file ? file.originalname : "Sin título");
-
-    const sql = `
-      INSERT INTO documentos
-        (titulo, autor, fecha_publicacion, thumbnail, archivo_url, created_by)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const params = [tituloFinal, autor || null, fecha_publicacion || null, null, archivo_url, created_by];
-
-    console.log("[uploadDocument] SQL params:", params);
-
-    try {
-      const [result] = await pool.query(sql, params);
-      console.log("[uploadDocument] Insert result:", result);
-      return res.status(201).json({ id: result.insertId, titulo: tituloFinal, archivo_url, created_by });
-    } catch (insertErr) {
-      console.error("[uploadDocument] INSERT ERROR:", insertErr.stack || insertErr);
-      return res.status(500).json({ message: "Error en INSERT", error: insertErr.message, code: insertErr.code, sqlMessage: insertErr.sqlMessage });
-    }
-  } catch (err) {
-    console.error("[uploadDocument] UNEXPECTED ERROR:", err.stack || err);
-    return res.status(500).json({ message: "Error inesperado", error: err.message });
-  }
-};
-
-// UPDATE
-export const updateDocument = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const file = req.file;
-    const { titulo, autor, fecha_publicacion, thumbnail } = req.body;
-
-    let oldFilename = null;
-    if (file) {
-      const [rows] = await pool.query("SELECT archivo_url FROM documentos WHERE id = ?", [id]);
-      if (!rows.length) return res.status(404).json({ message: "Documento no encontrado" });
-      oldFilename = rows[0].archivo_url ? path.basename(rows[0].archivo_url) : null;
-    }
-
-    const archivo_url = file ? `/uploads/${file.filename}` : null;
-
-    const sql = `
-      UPDATE documentos
-      SET titulo = COALESCE(?, titulo),
-          autor = COALESCE(?, autor),
-          fecha_publicacion = COALESCE(?, fecha_publicacion),
-          thumbnail = COALESCE(?, thumbnail),
-          archivo_url = COALESCE(?, archivo_url),
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `;
-    const params = [titulo || null, autor || null, fecha_publicacion || null, thumbnail || null, archivo_url, id];
-
-    const [result] = await pool.query(sql, params);
-    if (result.affectedRows === 0) {
-      if (file) fs.unlinkSync(path.join(UPLOAD_DIR, file.filename));
-      return res.status(404).json({ message: "Documento no encontrado" });
-    }
-
-    if (oldFilename) {
-      const oldPath = path.join(UPLOAD_DIR, oldFilename);
-      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath); } catch (e) { console.error("Error al eliminar archivo antiguo:", e); }
-    }
-
-    return res.json({ message: "Documento actualizado" });
-  } catch (err) {
-    console.error("[updateDocument] error:", err.stack || err);
-    if (req.file) {
-      try { fs.unlinkSync(path.join(UPLOAD_DIR, req.file.filename)); } catch (e) { console.error("unlink error", e); }
-    }
-    return res.status(500).json({ message: "Error al actualizar documento", error: err.message });
-  }
-};
-
-// DOWNLOAD
+/**
+ * Descargar documento por id (stream)
+ * GET /api/documents/:id/download
+ */
 export const downloadDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query("SELECT archivo_url FROM documentos WHERE id = ?", [id]);
-    if (!rows.length) return res.status(404).json({ message: "Documento no encontrado" });
+    const [rows] = await pool.query("SELECT file_name, archivo_url, mime_type FROM documentos WHERE id = ?", [id]);
+    if (!rows.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
-    const archivoUrl = rows[0].archivo_url;
-    if (!archivoUrl) return res.status(404).json({ message: "Archivo no disponible" });
+    const doc = rows[0];
+    if (!doc.archivo_url) return res.status(404).json({ ok: false, message: "Archivo no disponible" });
 
-    const filename = path.basename(archivoUrl);
-    const filePath = path.join(UPLOAD_DIR, filename);
+    const stored = doc.archivo_url.startsWith("/uploads/") ? doc.archivo_url.replace("/uploads/", "") : path.basename(doc.archivo_url);
+    const filePath = path.join(UPLOAD_DIR, stored);
 
-    if (!fs.existsSync(filePath)) return res.status(404).json({ message: "Archivo físico no encontrado" });
+    if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, message: "Archivo físico no encontrado" });
 
-    return res.download(filePath, filename);
+    const downloadName = doc.file_name || path.basename(filePath);
+    res.setHeader("Content-Type", doc.mime_type || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(downloadName)}"`);
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
   } catch (err) {
     console.error("[downloadDocument] error:", err.stack || err);
-    return res.status(500).json({ message: "Error al descargar documento", error: err.message });
+    return res.status(500).json({ ok: false, message: "Error al descargar documento", error: err.message });
   }
 };
 
-// DELETE
+/**
+ * Actualizar documento (metadatos y opcionalmente reemplazar archivo)
+ * PUT /api/documents/:id
+ * Puede recibir FormData con file (opcional), titulo, descripcion, category_id, status
+ */
+export const updateDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // comprobar existencia
+    const [existing] = await pool.query("SELECT archivo_url, file_name FROM documentos WHERE id = ?", [id]);
+    if (!existing.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
+
+    const prev = existing[0];
+    let newArchivoUrl = prev.archivo_url;
+    let newFileName = prev.file_name;
+    let newMime = null;
+    let newSize = null;
+
+    // Si se subió un nuevo archivo, mover/usar filename y limpiar anterior
+    if (req.file) {
+      const { originalname, filename, mimetype, size } = req.file;
+      newArchivoUrl = `/uploads/${filename}`;
+      newFileName = originalname;
+      newMime = mimetype;
+      newSize = size;
+
+      // eliminar archivo anterior si existe
+      try {
+        const prevStored = prev.archivo_url ? (prev.archivo_url.startsWith("/uploads/") ? prev.archivo_url.replace("/uploads/", "") : path.basename(prev.archivo_url)) : null;
+        if (prevStored) {
+          const prevPath = path.join(UPLOAD_DIR, prevStored);
+          if (fs.existsSync(prevPath)) fs.unlinkSync(prevPath);
+        }
+      } catch (e) {
+        console.error("[updateDocument] cleanup previous file error:", e.stack || e);
+      }
+    }
+
+    // Campos a actualizar
+    const titulo = req.body.titulo ? String(req.body.titulo).trim() : undefined;
+    const descripcion = req.body.descripcion !== undefined ? String(req.body.descripcion).trim() : undefined;
+    const category_id = req.body.category_id !== undefined ? (req.body.category_id ? Number(req.body.category_id) : null) : undefined;
+    const status = req.body.status ? String(req.body.status) : undefined;
+
+    // Construir query dinámico
+    const updates = [];
+    const params = [];
+
+    if (titulo !== undefined) { updates.push("titulo = ?"); params.push(titulo); }
+    if (descripcion !== undefined) { updates.push("descripcion = ?"); params.push(descripcion); }
+    if (category_id !== undefined) { updates.push("category_id = ?"); params.push(category_id); }
+    if (status !== undefined) { updates.push("status = ?"); params.push(status); }
+
+    // archivo fields
+    if (newArchivoUrl !== prev.archivo_url) {
+      updates.push("archivo_url = ?");
+      params.push(newArchivoUrl);
+    }
+    if (newFileName !== prev.file_name) {
+      updates.push("file_name = ?");
+      params.push(newFileName);
+    }
+    if (newMime !== null) {
+      updates.push("mime_type = ?");
+      params.push(newMime);
+    }
+    if (newSize !== null) {
+      updates.push("size = ?");
+      params.push(newSize);
+    }
+
+    if (updates.length === 0) {
+      return res.json({ ok: true, message: "Nada que actualizar" });
+    }
+
+    params.push(id);
+    const sql = `UPDATE documentos SET ${updates.join(", ")}, updated_at = NOW() WHERE id = ?`;
+    await pool.query(sql, params);
+
+    const [rows] = await pool.query("SELECT id, titulo, descripcion, archivo_url, category_id, created_by, file_name, mime_type, size, created_at, updated_at FROM documentos WHERE id = ?", [id]);
+    return res.json({ ok: true, document: rows[0] });
+  } catch (err) {
+    console.error("[updateDocument] error:", err.stack || err);
+    // cleanup si multer guardó archivo y hubo error
+    try {
+      if (req?.file?.filename) {
+        const fp = path.join(UPLOAD_DIR, req.file.filename);
+        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      }
+    } catch (e) {
+      console.error("[updateDocument] cleanup error:", e.stack || e);
+    }
+    return res.status(500).json({ ok: false, message: "Error al actualizar documento", error: err.message });
+  }
+};
+
+/**
+ * Eliminar documento por id (borra registro y archivo físico)
+ * DELETE /api/documents/:id
+ */
 export const deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.query("SELECT archivo_url FROM documentos WHERE id = ?", [id]);
-    if (!rows.length) return res.status(404).json({ message: "Documento no encontrado" });
+    if (!rows.length) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
     const archivoUrl = rows[0].archivo_url;
-    const filename = archivoUrl ? path.basename(archivoUrl) : null;
+    const filename = archivoUrl ? (archivoUrl.startsWith("/uploads/") ? archivoUrl.replace("/uploads/", "") : path.basename(archivoUrl)) : null;
 
     const [result] = await pool.query("DELETE FROM documentos WHERE id = ?", [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ message: "Documento no encontrado" });
+    if (result.affectedRows === 0) return res.status(404).json({ ok: false, message: "Documento no encontrado" });
 
     if (filename) {
       const filePath = path.join(UPLOAD_DIR, filename);
-      try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) { console.error("[deleteDocument] unlink error:", e); }
+      try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch (e) { console.error("[deleteDocument] unlink error:", e.stack || e); }
     }
 
-    return res.json({ message: "Documento eliminado" });
+    return res.json({ ok: true, message: "Documento eliminado" });
   } catch (err) {
     console.error("[deleteDocument] error:", err.stack || err);
-    return res.status(500).json({ message: "Error al eliminar documento", error: err.message });
+    return res.status(500).json({ ok: false, message: "Error al eliminar documento", error: err.message });
   }
 };
